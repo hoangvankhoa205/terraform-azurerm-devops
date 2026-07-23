@@ -48,5 +48,9 @@ resource "azurerm_linux_virtual_machine" "this" {
     type = "SystemAssigned"
 
   }
+
+  # Managed storage account (no storage_account_uri) — required for the Azure
+  # Serial Console and boot screenshots on these private, no-public-IP VMs.
+  boot_diagnostics {}
 }
 

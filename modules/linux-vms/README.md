@@ -5,12 +5,17 @@ VM uses SSH-only authentication and a managed identity; no public IP is
 created. Use VM Scale Sets rather than this module for elastic production
 capacity.
 
+Boot diagnostics is enabled (managed storage account) so these private VMs are
+reachable via the Azure **Serial Console** for break-glass access. Since SSH is
+key-only, set a local password for console login by passing a cloud-init
+`custom_data` per instance (`ssh_pwauth` stays off).
+
 ## Usage
 
 ```hcl
 module "vms" {
   source  = "hoangvankhoa205/devops/azurerm//modules/linux-vms"
-  version = "0.2.0"
+  version = "0.3.0"
 
   location            = "Southeast Asia"
   resource_group_name = "learn-rg"
