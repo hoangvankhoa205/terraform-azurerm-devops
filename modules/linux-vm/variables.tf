@@ -45,9 +45,9 @@ variable "admin_username" {
 }
 
 variable "size" {
-  description = "Azure VM SKU."
+  description = "Azure VM SKU. Defaults to a general-purpose x86 size with broad regional capacity; override for cheaper burstable SKUs (e.g. Standard_B1s/B2s) where your region and subscription have capacity."
   type        = string
-  default     = "Standard_B1s"
+  default     = "Standard_D2s_v3"
 }
 
 variable "custom_data" {

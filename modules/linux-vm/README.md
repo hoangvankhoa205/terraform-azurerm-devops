@@ -47,7 +47,7 @@ No modules.
 | <a name="input_name"></a> [name](#input\_name) | VM name. | `string` | n/a | yes |
 | <a name="input_public_ip_enabled"></a> [public\_ip\_enabled](#input\_public\_ip\_enabled) | Create and attach a Standard static public IPv4 address. This does not create an inbound NSG rule. Intended for explicit, short-lived tests. | `bool` | `false` | no |
 | <a name="input_resource_group_name"></a> [resource\_group\_name](#input\_resource\_group\_name) | Existing resource group name. | `string` | n/a | yes |
-| <a name="input_size"></a> [size](#input\_size) | Azure VM SKU. | `string` | `"Standard_B1s"` | no |
+| <a name="input_size"></a> [size](#input\_size) | Azure VM SKU. Defaults to a general-purpose x86 size with broad regional capacity; override for cheaper burstable SKUs (e.g. Standard\_B1s/B2s) where your region and subscription have capacity. | `string` | `"Standard_D2s_v3"` | no |
 | <a name="input_ssh_public_key"></a> [ssh\_public\_key](#input\_ssh\_public\_key) | OpenSSH public key; private keys are never accepted. | `string` | n/a | yes |
 | <a name="input_subnet_id"></a> [subnet\_id](#input\_subnet\_id) | ID of the subnet for the private NIC. | `string` | n/a | yes |
 | <a name="input_tags"></a> [tags](#input\_tags) | Resource tags. | `map(string)` | `{}` | no |
