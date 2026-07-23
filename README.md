@@ -5,9 +5,10 @@ Reusable AzureRM implementations of the infrastructure concepts demonstrated by
 This is an independent community module collection: it is not an official
 Azure Verified Module and is not affiliated with the original project.
 
-> **Status:** early work in progress. The collection currently ships a single
-> module, [`linux-vm`](./modules/linux-vm). More Azure modules will be added
-> over time — see [Roadmap](#roadmap).
+> **Status:** early work in progress. The collection currently ships two
+> modules, [`linux-vm`](./modules/linux-vm) and
+> [`linux-vms`](./modules/linux-vms). More Azure modules will be added over
+> time — see [Roadmap](#roadmap).
 
 The root module deliberately creates no resources. Pick a module from
 [`modules/`](./modules) and compose it in your own root configuration.
@@ -18,7 +19,7 @@ Terraform Registry package address `hoangvankhoa205/devops/azurerm`.
 ```hcl
 module "vm" {
   source  = "hoangvankhoa205/devops/azurerm//modules/linux-vm"
-  version = "0.1.2"
+  version = "0.2.0"
 
   name                = "learn-vm"
   location            = "Southeast Asia"
@@ -41,6 +42,7 @@ production landing zone.
 | Module | Description |
 | ------ | ----------- |
 | [`linux-vm`](./modules/linux-vm) | One Ubuntu VM with SSH-key-only auth and a system-assigned managed identity. Private NIC by default; `public_ip_enabled` is opt-in and does not open an NSG rule. |
+| [`linux-vms`](./modules/linux-vms) | Multiple private Ubuntu VMs from a `for_each` map of instance definitions. SSH-key-only auth and a managed identity per VM; no public IP. |
 
 ## Roadmap
 
@@ -48,7 +50,6 @@ Planned modules (not yet implemented). This list is aspirational and will
 change:
 
 - `virtual-network`
-- `linux-vms` (multi-VM)
 - `container-registry`, `aks-cluster`
 - `key-vault-key`, `postgresql-flexible-server`
 - `state-storage`, `github-actions-federated-identity`

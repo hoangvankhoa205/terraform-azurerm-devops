@@ -5,10 +5,8 @@ managed identity. The default is a private-only NIC. Set
 `public_ip_enabled = true` only for an explicit, short-lived test; doing so
 creates a Standard static IPv4 address but does not open an NSG rule.
 
-For a complete CIDR-scoped interactive test, use
-[`examples/public-ssh-smoke`](../../examples/public-ssh-smoke). Production
-callers should keep the private default and reach the VM through Bastion, VPN,
-or another approved private management path.
+Production callers should keep the private default and reach the VM through
+Bastion, VPN, or another approved private management path.
 
 
 <!-- BEGIN_TF_DOCS -->
