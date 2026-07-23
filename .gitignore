@@ -1,0 +1,26 @@
+# Local .terraform / .tofu directories
+**/.terraform/*
+**/.terraform.tfstate*
+
+# Lock file — not committed for reusable/published modules
+**/.terraform.lock.hcl
+
+# State files
+*.tfstate
+*.tfstate.*
+
+# Crash log files
+crash.log
+crash.*.log
+
+# Variable / override files that may contain secrets
+*.tfvars
+*.tfvars.json
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# CLI config
+.terraformrc
+terraform.rc
