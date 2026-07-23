@@ -13,12 +13,12 @@ The root module deliberately creates no resources. Pick a module from
 [`modules/`](./modules) and compose it in your own root configuration.
 
 The GitHub repository name is `terraform-azurerm-devops`, which produces the
-Terraform Registry package address `hoangkhoaa2005/devops/azurerm`.
+Terraform Registry package address `hoangvankhoa205/devops/azurerm`.
 
 ```hcl
 module "vm" {
-  source  = "hoangkhoaa2005/devops/azurerm//modules/linux-vm"
-  version = "0.1.0"
+  source  = "hoangvankhoa205/devops/azurerm//modules/linux-vm"
+  version = "0.1.1"
 
   name                = "learn-vm"
   location            = "Southeast Asia"
