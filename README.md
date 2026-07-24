@@ -5,12 +5,13 @@ Reusable AzureRM implementations of the infrastructure concepts demonstrated by
 This is an independent community module collection: it is not an official
 Azure Verified Module and is not affiliated with the original project.
 
-> **Status:** early work in progress. The collection currently ships four
+> **Status:** early work in progress. The collection currently ships five
 > modules, [`linux-vm`](./modules/linux-vm),
 > [`linux-vms`](./modules/linux-vms),
-> [`state-storage`](./modules/state-storage), and
-> [`front-door-static-website`](./modules/front-door-static-website). More Azure
-> modules will be added over time — see [Roadmap](#roadmap).
+> [`state-storage`](./modules/state-storage),
+> [`front-door-static-website`](./modules/front-door-static-website), and
+> [`virtual-network`](./modules/virtual-network). More Azure modules will be
+> added over time — see [Roadmap](#roadmap).
 
 The root module deliberately creates no resources. Pick a module from
 [`modules/`](./modules) and compose it in your own root configuration.
@@ -47,13 +48,13 @@ production landing zone.
 | [`linux-vms`](./modules/linux-vms) | Multiple private Ubuntu VMs from a `for_each` map of instance definitions. SSH-key-only auth and a managed identity per VM; no public IP. |
 | [`state-storage`](./modules/state-storage) | Hardened Blob container for Terraform/OpenTofu remote state: versioning, soft delete, TLS 1.2, shared-key auth disabled (Entra ID/OIDC only), and deny-by-default networking. Blob leases provide native state locking. |
 | [`front-door-static-website`](./modules/front-door-static-website) | Fronts a Storage static-website origin with Front Door Standard/Premium and forces HTTPS. Serves on the default `*.azurefd.net` hostname; custom domain, WAF, and Private Link are left to the caller. |
+| [`virtual-network`](./modules/virtual-network) | A VNet with subnets from a `for_each` map keyed by role, each with an auto-created NSG and association. Supports per-subnet service endpoints, delegation, and opt-in default outbound access. |
 
 ## Roadmap
 
 Planned modules (not yet implemented). This list is aspirational and will
 change:
 
-- `virtual-network`
 - `container-registry`, `aks-cluster`
 - `key-vault-key`, `postgresql-flexible-server`
 - `github-actions-federated-identity`
