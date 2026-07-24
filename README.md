@@ -5,10 +5,11 @@ Reusable AzureRM implementations of the infrastructure concepts demonstrated by
 This is an independent community module collection: it is not an official
 Azure Verified Module and is not affiliated with the original project.
 
-> **Status:** early work in progress. The collection currently ships two
-> modules, [`linux-vm`](./modules/linux-vm) and
-> [`linux-vms`](./modules/linux-vms). More Azure modules will be added over
-> time — see [Roadmap](#roadmap).
+> **Status:** early work in progress. The collection currently ships three
+> modules, [`linux-vm`](./modules/linux-vm),
+> [`linux-vms`](./modules/linux-vms), and
+> [`state-storage`](./modules/state-storage). More Azure modules will be added
+> over time — see [Roadmap](#roadmap).
 
 The root module deliberately creates no resources. Pick a module from
 [`modules/`](./modules) and compose it in your own root configuration.
@@ -19,7 +20,7 @@ Terraform Registry package address `hoangvankhoa205/devops/azurerm`.
 ```hcl
 module "vm" {
   source  = "hoangvankhoa205/devops/azurerm//modules/linux-vm"
-  version = "0.2.0"
+  version = "0.4.0"
 
   name                = "learn-vm"
   location            = "Southeast Asia"
@@ -43,6 +44,7 @@ production landing zone.
 | ------ | ----------- |
 | [`linux-vm`](./modules/linux-vm) | One Ubuntu VM with SSH-key-only auth and a system-assigned managed identity. Private NIC by default; `public_ip_enabled` is opt-in and does not open an NSG rule. |
 | [`linux-vms`](./modules/linux-vms) | Multiple private Ubuntu VMs from a `for_each` map of instance definitions. SSH-key-only auth and a managed identity per VM; no public IP. |
+| [`state-storage`](./modules/state-storage) | Hardened Blob container for Terraform/OpenTofu remote state: versioning, soft delete, TLS 1.2, shared-key auth disabled (Entra ID/OIDC only), and deny-by-default networking. Blob leases provide native state locking. |
 
 ## Roadmap
 
@@ -52,7 +54,7 @@ change:
 - `virtual-network`
 - `container-registry`, `aks-cluster`
 - `key-vault-key`, `postgresql-flexible-server`
-- `state-storage`, `github-actions-federated-identity`
+- `github-actions-federated-identity`
 
 ## Compatibility
 
