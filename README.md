@@ -5,11 +5,12 @@ Reusable AzureRM implementations of the infrastructure concepts demonstrated by
 This is an independent community module collection: it is not an official
 Azure Verified Module and is not affiliated with the original project.
 
-> **Status:** early work in progress. The collection currently ships three
+> **Status:** early work in progress. The collection currently ships four
 > modules, [`linux-vm`](./modules/linux-vm),
-> [`linux-vms`](./modules/linux-vms), and
-> [`state-storage`](./modules/state-storage). More Azure modules will be added
-> over time — see [Roadmap](#roadmap).
+> [`linux-vms`](./modules/linux-vms),
+> [`state-storage`](./modules/state-storage), and
+> [`front-door-static-website`](./modules/front-door-static-website). More Azure
+> modules will be added over time — see [Roadmap](#roadmap).
 
 The root module deliberately creates no resources. Pick a module from
 [`modules/`](./modules) and compose it in your own root configuration.
@@ -45,6 +46,7 @@ production landing zone.
 | [`linux-vm`](./modules/linux-vm) | One Ubuntu VM with SSH-key-only auth and a system-assigned managed identity. Private NIC by default; `public_ip_enabled` is opt-in and does not open an NSG rule. |
 | [`linux-vms`](./modules/linux-vms) | Multiple private Ubuntu VMs from a `for_each` map of instance definitions. SSH-key-only auth and a managed identity per VM; no public IP. |
 | [`state-storage`](./modules/state-storage) | Hardened Blob container for Terraform/OpenTofu remote state: versioning, soft delete, TLS 1.2, shared-key auth disabled (Entra ID/OIDC only), and deny-by-default networking. Blob leases provide native state locking. |
+| [`front-door-static-website`](./modules/front-door-static-website) | Fronts a Storage static-website origin with Front Door Standard/Premium and forces HTTPS. Serves on the default `*.azurefd.net` hostname; custom domain, WAF, and Private Link are left to the caller. |
 
 ## Roadmap
 
