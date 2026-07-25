@@ -63,7 +63,7 @@ production landing zone.
 | [`storage-static-website`](./modules/storage-static-website) | A Storage account with static website hosting, TLS 1.2, and shared-key auth disabled (Entra ID/OIDC only). The public endpoint is opt-in and the firewall denies by default; the module manages hosting configuration, not website files. |
 | [`endpoint-test`](./modules/endpoint-test) | Post-deployment HTTP verification: a `check` block asserting a URL returns an expected status. Creates no Azure resources and is the only module needing a provider other than `azurerm`. A wrong status is a warning, not an apply failure. |
 | [`key-vault-key`](./modules/key-vault-key) | An RBAC-authorized Key Vault with purge protection and one RSA key, for customer-managed encryption. Public access is opt-in and the ACL denies by default. Purge protection is irreversible: a destroyed vault's name stays reserved for the soft-delete window. |
-| [`key-vault`](./modules/key-vault) | An RBAC-authorized Key Vault and nothing else — keys, secrets and certificates are the caller's. Use this when a vault holds more than one kind of object; `key-vault-key` cannot be combined with it, since both create a vault. |
+| [`key-vault`](./modules/key-vault) | An RBAC-authorized Key Vault and nothing else — keys, secrets and certificates are the caller's. Use it when the vault holds no key, or when you want the key managed explicitly in your root. It cannot be combined with `key-vault-key`, since both create a vault. |
 | [`key-vault-secret`](./modules/key-vault-secret) | Secrets in an existing vault, one per entry in a map. Takes a `key_vault_id` and creates no vault. Names and values are separate variables because `for_each` rejects sensitive values. |
 
 ## Roadmap

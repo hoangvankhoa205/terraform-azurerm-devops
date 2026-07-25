@@ -11,14 +11,31 @@ workload needs, instead of each object type dragging its own vault along.
 Pair it with [`key-vault-secret`](../key-vault-secret), or manage
 `azurerm_key_vault_key` / `_secret` / `_certificate` directly in your root.
 
-## Choosing between this and `key-vault-key`
+## Which of the three vault modules to use
 
-[`key-vault-key`](../key-vault-key) creates a vault **and** an RSA key in one
-shot. It is the shorter path when a customer-managed key is all you need.
+The difference is not RBAC, and it is not an Azure restriction — a single
+Azure vault has always held keys, secrets and certificates side by side. The
+modules differ only in which Terraform resources they create:
 
-Use **this** module when the vault holds anything else, or more than one kind
-of object. The two cannot be combined — both create a vault, so calling both
-gives you two vaults, not one vault with a key and secrets in it.
+| Module | Creates | Needs an existing vault? |
+| ------ | ------- | ------------------------ |
+| `key-vault` | `azurerm_key_vault` | no |
+| [`key-vault-key`](../key-vault-key) | `azurerm_key_vault` **and** `azurerm_key_vault_key` | no |
+| [`key-vault-secret`](../key-vault-secret) | `azurerm_key_vault_secret` per entry | **yes** — takes `key_vault_id` |
+
+So the only combination that fails is two modules that each create a vault:
+
+```
+key-vault                          empty vault; add objects in your root
+key-vault + key-vault-secret       one vault with secrets              OK
+key-vault-key + key-vault-secret   one vault with a key AND secrets    OK
+key-vault + key-vault-key          two separate vaults                 NO
+```
+
+Reach for `key-vault-key` when a customer-managed key is the point and you want
+it in one call; it exposes `key_vault_id` too, so secrets can still be added
+alongside. Reach for **this** module when the vault holds no key, or when you
+want the key managed explicitly in your own root.
 
 ## Two independent barriers stand between a caller and the data plane
 
