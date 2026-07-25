@@ -27,12 +27,9 @@ variable "secrets" {
     not_before_date = optional(string)
     tags            = optional(map(string), {})
   }))
-  # Azure permits only alphanumerics and hyphens here — db_password is invalid,
-  # db-password is fine. Catching it at plan time beats a 400 partway through
-  # an apply.
   validation {
     condition     = alltrue([for name in keys(var.secrets) : can(regex("^[a-zA-Z0-9-]{1,127}$", name))])
-    error_message = "Secret names must be 1-127 characters of letters, digits, or hyphens — no underscores or dots. Use db-password, not db_password."
+    error_message = "Secret names must be 1-127 characters of letters, digits, or hyphens."
   }
 }
 

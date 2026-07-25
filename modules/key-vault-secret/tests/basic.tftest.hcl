@@ -61,7 +61,12 @@ run "merges_module_tags_under_secret_tags" {
   }
 }
 
-run "rejects_invalid_secret_name" {
+# Azure allows only alphanumerics and hyphens in a secret name — no
+# underscores, no dots. db_password is rejected by Azure itself, so the
+# validation exists to fail at plan time rather than partway through an apply.
+# Note the keys DO match across the two maps here; the name alone is the
+# problem.
+run "rejects_underscore_in_secret_name" {
   command = plan
   variables {
     key_vault_id = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/learn-rg/providers/Microsoft.KeyVault/vaults/learn-key-vault-001"
