@@ -5,7 +5,7 @@ Reusable AzureRM implementations of the infrastructure concepts demonstrated by
 This is an independent community module collection: it is not an official
 Azure Verified Module and is not affiliated with the original project.
 
-> **Status:** early work in progress. The collection currently ships ten
+> **Status:** early work in progress. The collection currently ships eleven
 > modules, [`linux-vm`](./modules/linux-vm),
 > [`linux-vms`](./modules/linux-vms),
 > [`vm-scale-set`](./modules/vm-scale-set),
@@ -14,8 +14,9 @@ Azure Verified Module and is not affiliated with the original project.
 > [`virtual-network`](./modules/virtual-network),
 > [`postgresql-flexible-server`](./modules/postgresql-flexible-server),
 > [`container-registry`](./modules/container-registry),
-> [`storage-static-website`](./modules/storage-static-website), and
-> [`endpoint-test`](./modules/endpoint-test). More
+> [`storage-static-website`](./modules/storage-static-website),
+> [`endpoint-test`](./modules/endpoint-test), and
+> [`key-vault-key`](./modules/key-vault-key). More
 > Azure modules will be added over time — see [Roadmap](#roadmap).
 
 The root module deliberately creates no resources. Pick a module from
@@ -27,7 +28,7 @@ Terraform Registry package address `hoangvankhoa205/devops/azurerm`.
 ```hcl
 module "vm" {
   source  = "hoangvankhoa205/devops/azurerm//modules/linux-vm"
-  version = "0.12.0"
+  version = "0.13.0"
 
   name                = "learn-vm"
   location            = "Southeast Asia"
@@ -59,6 +60,7 @@ production landing zone.
 | [`container-registry`](./modules/container-registry) | An Azure Container Registry with the local admin account disabled, so callers authenticate with Entra ID. Public network access is opt-in; the Private Endpoint and `privatelink.azurecr.io` DNS a private registry needs are left to the caller. |
 | [`storage-static-website`](./modules/storage-static-website) | A Storage account with static website hosting, TLS 1.2, and shared-key auth disabled (Entra ID/OIDC only). The public endpoint is opt-in and the firewall denies by default; the module manages hosting configuration, not website files. |
 | [`endpoint-test`](./modules/endpoint-test) | Post-deployment HTTP verification: a `check` block asserting a URL returns an expected status. Creates no Azure resources and is the only module needing a provider other than `azurerm`. A wrong status is a warning, not an apply failure. |
+| [`key-vault-key`](./modules/key-vault-key) | An RBAC-authorized Key Vault with purge protection and one RSA key, for customer-managed encryption. Public access is opt-in and the ACL denies by default. Purge protection is irreversible: a destroyed vault's name stays reserved for the soft-delete window. |
 
 ## Roadmap
 
@@ -66,7 +68,6 @@ Planned modules (not yet implemented). This list is aspirational and will
 change:
 
 - `aks-cluster`
-- `key-vault-key`
 - `github-actions-federated-identity`
 
 ## Compatibility
