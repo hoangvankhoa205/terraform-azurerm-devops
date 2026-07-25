@@ -26,7 +26,7 @@ Terraform Registry package address `hoangvankhoa205/devops/azurerm`.
 ```hcl
 module "vm" {
   source  = "hoangvankhoa205/devops/azurerm//modules/linux-vm"
-  version = "0.10.0"
+  version = "0.11.0"
 
   name                = "learn-vm"
   location            = "Southeast Asia"

@@ -17,6 +17,29 @@ Entra-authenticated deployment step. A global Front Door composition should use
 the production storage/edge modules with Private Link rather than broad origin
 firewall exceptions. This module manages infrastructure, not website files.
 
+## Uploading content
+
+Enabling static website hosting is what creates the implicit `$web` container,
+so anything writing into it must be ordered after that. Use `web_container_id`
+and Terraform derives the ordering on its own:
+
+```hcl
+resource "azurerm_storage_blob" "index" {
+  name                 = "index.html"
+  storage_container_id = module.static_site.web_container_id
+  type                 = "Block"
+  content_type         = "text/html"
+  source               = "site/index.html"
+}
+```
+
+Do not build the ID out of `storage_account_id` instead. That expression
+depends only on the storage account, so Terraform is free to schedule the blob
+write alongside the enablement rather than after it, and the apply fails with
+`404 ContainerNotFound`. Both outputs produce the same string — Azure gives the
+static website resource the account's own ID — but only `web_container_id`
+carries the dependency.
+
 <!-- BEGIN_TF_DOCS -->
 ## Requirements
 
@@ -62,4 +85,5 @@ No modules.
 | <a name="output_primary_web_endpoint"></a> [primary\_web\_endpoint](#output\_primary\_web\_endpoint) | Static website HTTPS endpoint. |
 | <a name="output_primary_web_host"></a> [primary\_web\_host](#output\_primary\_web\_host) | Static website origin hostname. |
 | <a name="output_storage_account_id"></a> [storage\_account\_id](#output\_storage\_account\_id) | Storage account ID. |
+| <a name="output_web_container_id"></a> [web\_container\_id](#output\_web\_container\_id) | ID of the implicit $web container. Prefer this over composing the ID from storage\_account\_id: it is anchored on the static website resource, so blob writes are ordered after hosting is enabled. |
 <!-- END_TF_DOCS -->
