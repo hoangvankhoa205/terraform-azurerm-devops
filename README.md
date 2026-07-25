@@ -5,14 +5,15 @@ Reusable AzureRM implementations of the infrastructure concepts demonstrated by
 This is an independent community module collection: it is not an official
 Azure Verified Module and is not affiliated with the original project.
 
-> **Status:** early work in progress. The collection currently ships seven
+> **Status:** early work in progress. The collection currently ships eight
 > modules, [`linux-vm`](./modules/linux-vm),
 > [`linux-vms`](./modules/linux-vms),
 > [`vm-scale-set`](./modules/vm-scale-set),
 > [`state-storage`](./modules/state-storage),
 > [`front-door-static-website`](./modules/front-door-static-website),
-> [`virtual-network`](./modules/virtual-network), and
-> [`postgresql-flexible-server`](./modules/postgresql-flexible-server). More
+> [`virtual-network`](./modules/virtual-network),
+> [`postgresql-flexible-server`](./modules/postgresql-flexible-server), and
+> [`container-registry`](./modules/container-registry). More
 > Azure modules will be added over time — see [Roadmap](#roadmap).
 
 The root module deliberately creates no resources. Pick a module from
@@ -53,13 +54,14 @@ production landing zone.
 | [`front-door-static-website`](./modules/front-door-static-website) | Fronts a Storage static-website origin with Front Door Standard/Premium and forces HTTPS. Serves on the default `*.azurefd.net` hostname; custom domain, WAF, and Private Link are left to the caller. |
 | [`virtual-network`](./modules/virtual-network) | A VNet with subnets from a `for_each` map keyed by role, each with an auto-created NSG and association. Supports per-subnet service endpoints, delegation, and opt-in default outbound access. |
 | [`postgresql-flexible-server`](./modules/postgresql-flexible-server) | A private, delegated-subnet PostgreSQL Flexible Server with point-in-time-restore backups. The caller supplies the admin password from a secret store; it is never output. HA standby is opt-in and is not a readable replica. |
+| [`container-registry`](./modules/container-registry) | An Azure Container Registry with the local admin account disabled, so callers authenticate with Entra ID. Public network access is opt-in; the Private Endpoint and `privatelink.azurecr.io` DNS a private registry needs are left to the caller. |
 
 ## Roadmap
 
 Planned modules (not yet implemented). This list is aspirational and will
 change:
 
-- `container-registry`, `aks-cluster`
+- `aks-cluster`
 - `key-vault-key`
 - `github-actions-federated-identity`
 
