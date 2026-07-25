@@ -103,6 +103,10 @@ run "rejects_secret_with_no_value" {
 # The mirror: a value nobody asked for. Almost always a typo in one of the two
 # maps, and silently ignoring it would create the wrong secret and skip the
 # intended one.
+#
+# expect_failures names var.secrets, not var.secret_values, because both
+# key-matching validations live on var.secrets — Terraform rejects two
+# variables whose validations reference each other.
 run "rejects_value_with_no_secret" {
   command = plan
   variables {
@@ -116,5 +120,5 @@ run "rejects_value_with_no_secret" {
     }
   }
 
-  expect_failures = [var.secret_values]
+  expect_failures = [var.secrets]
 }
