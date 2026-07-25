@@ -5,7 +5,7 @@ Reusable AzureRM implementations of the infrastructure concepts demonstrated by
 This is an independent community module collection: it is not an official
 Azure Verified Module and is not affiliated with the original project.
 
-> **Status:** early work in progress. The collection currently ships nine
+> **Status:** early work in progress. The collection currently ships ten
 > modules, [`linux-vm`](./modules/linux-vm),
 > [`linux-vms`](./modules/linux-vms),
 > [`vm-scale-set`](./modules/vm-scale-set),
@@ -13,8 +13,9 @@ Azure Verified Module and is not affiliated with the original project.
 > [`front-door-static-website`](./modules/front-door-static-website),
 > [`virtual-network`](./modules/virtual-network),
 > [`postgresql-flexible-server`](./modules/postgresql-flexible-server),
-> [`container-registry`](./modules/container-registry), and
-> [`storage-static-website`](./modules/storage-static-website). More
+> [`container-registry`](./modules/container-registry),
+> [`storage-static-website`](./modules/storage-static-website), and
+> [`endpoint-test`](./modules/endpoint-test). More
 > Azure modules will be added over time — see [Roadmap](#roadmap).
 
 The root module deliberately creates no resources. Pick a module from
@@ -26,7 +27,7 @@ Terraform Registry package address `hoangvankhoa205/devops/azurerm`.
 ```hcl
 module "vm" {
   source  = "hoangvankhoa205/devops/azurerm//modules/linux-vm"
-  version = "0.11.0"
+  version = "0.12.0"
 
   name                = "learn-vm"
   location            = "Southeast Asia"
@@ -57,6 +58,7 @@ production landing zone.
 | [`postgresql-flexible-server`](./modules/postgresql-flexible-server) | A private, delegated-subnet PostgreSQL Flexible Server with point-in-time-restore backups. The caller supplies the admin password from a secret store; it is never output. HA standby is opt-in and is not a readable replica. |
 | [`container-registry`](./modules/container-registry) | An Azure Container Registry with the local admin account disabled, so callers authenticate with Entra ID. Public network access is opt-in; the Private Endpoint and `privatelink.azurecr.io` DNS a private registry needs are left to the caller. |
 | [`storage-static-website`](./modules/storage-static-website) | A Storage account with static website hosting, TLS 1.2, and shared-key auth disabled (Entra ID/OIDC only). The public endpoint is opt-in and the firewall denies by default; the module manages hosting configuration, not website files. |
+| [`endpoint-test`](./modules/endpoint-test) | Post-deployment HTTP verification: a `check` block asserting a URL returns an expected status. Creates no Azure resources and is the only module needing a provider other than `azurerm`. A wrong status is a warning, not an apply failure. |
 
 ## Roadmap
 
@@ -72,6 +74,8 @@ change:
 - Terraform `>= 1.9, < 2.0`
 - OpenTofu `>= 1.9, < 2.0`
 - AzureRM `>= 4.81.0, < 5.0.0`
+- HTTP `>= 3.5.0, < 4.0.0` — `endpoint-test` only; every other module needs
+  AzureRM alone
 
 Modules configure no providers or backends. Configure those only in a root
 module. Run `terraform test` or `tofu test` in an individual module directory;
