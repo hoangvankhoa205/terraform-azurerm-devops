@@ -5,7 +5,7 @@ Reusable AzureRM implementations of the infrastructure concepts demonstrated by
 This is an independent community module collection: it is not an official
 Azure Verified Module and is not affiliated with the original project.
 
-> **Status:** early work in progress. The collection currently ships eleven
+> **Status:** early work in progress. The collection currently ships thirteen
 > modules, [`linux-vm`](./modules/linux-vm),
 > [`linux-vms`](./modules/linux-vms),
 > [`vm-scale-set`](./modules/vm-scale-set),
@@ -16,7 +16,9 @@ Azure Verified Module and is not affiliated with the original project.
 > [`container-registry`](./modules/container-registry),
 > [`storage-static-website`](./modules/storage-static-website),
 > [`endpoint-test`](./modules/endpoint-test), and
-> [`key-vault-key`](./modules/key-vault-key). More
+> [`key-vault-key`](./modules/key-vault-key),
+> [`key-vault`](./modules/key-vault), and
+> [`key-vault-secret`](./modules/key-vault-secret). More
 > Azure modules will be added over time — see [Roadmap](#roadmap).
 
 The root module deliberately creates no resources. Pick a module from
@@ -28,7 +30,7 @@ Terraform Registry package address `hoangvankhoa205/devops/azurerm`.
 ```hcl
 module "vm" {
   source  = "hoangvankhoa205/devops/azurerm//modules/linux-vm"
-  version = "0.13.0"
+  version = "0.14.0"
 
   name                = "learn-vm"
   location            = "Southeast Asia"
@@ -61,6 +63,8 @@ production landing zone.
 | [`storage-static-website`](./modules/storage-static-website) | A Storage account with static website hosting, TLS 1.2, and shared-key auth disabled (Entra ID/OIDC only). The public endpoint is opt-in and the firewall denies by default; the module manages hosting configuration, not website files. |
 | [`endpoint-test`](./modules/endpoint-test) | Post-deployment HTTP verification: a `check` block asserting a URL returns an expected status. Creates no Azure resources and is the only module needing a provider other than `azurerm`. A wrong status is a warning, not an apply failure. |
 | [`key-vault-key`](./modules/key-vault-key) | An RBAC-authorized Key Vault with purge protection and one RSA key, for customer-managed encryption. Public access is opt-in and the ACL denies by default. Purge protection is irreversible: a destroyed vault's name stays reserved for the soft-delete window. |
+| [`key-vault`](./modules/key-vault) | An RBAC-authorized Key Vault and nothing else — keys, secrets and certificates are the caller's. Use this when a vault holds more than one kind of object; `key-vault-key` cannot be combined with it, since both create a vault. |
+| [`key-vault-secret`](./modules/key-vault-secret) | Secrets in an existing vault, one per entry in a map. Takes a `key_vault_id` and creates no vault. Names and values are separate variables because `for_each` rejects sensitive values. |
 
 ## Roadmap
 
