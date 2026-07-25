@@ -80,3 +80,41 @@ run "rejects_underscore_in_secret_name" {
 
   expect_failures = [var.secrets]
 }
+
+# A secret declared with no value. Without the cross-variable validation this
+# surfaced as "Invalid index" inside the resource, naming neither the variable
+# at fault nor the missing key.
+run "rejects_secret_with_no_value" {
+  command = plan
+  variables {
+    key_vault_id = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/learn-rg/providers/Microsoft.KeyVault/vaults/learn-key-vault-001"
+    secrets = {
+      db-username = {}
+      db-password = {}
+    }
+    secret_values = {
+      db-username = "pgadmin"
+    }
+  }
+
+  expect_failures = [var.secrets]
+}
+
+# The mirror: a value nobody asked for. Almost always a typo in one of the two
+# maps, and silently ignoring it would create the wrong secret and skip the
+# intended one.
+run "rejects_value_with_no_secret" {
+  command = plan
+  variables {
+    key_vault_id = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/learn-rg/providers/Microsoft.KeyVault/vaults/learn-key-vault-001"
+    secrets = {
+      db-password = {}
+    }
+    secret_values = {
+      db-password = "not-a-real-password"
+      db-passwrod = "typo-nobody-declared"
+    }
+  }
+
+  expect_failures = [var.secret_values]
+}
