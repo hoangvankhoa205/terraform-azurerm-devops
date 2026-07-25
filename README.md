@@ -5,15 +5,16 @@ Reusable AzureRM implementations of the infrastructure concepts demonstrated by
 This is an independent community module collection: it is not an official
 Azure Verified Module and is not affiliated with the original project.
 
-> **Status:** early work in progress. The collection currently ships eight
+> **Status:** early work in progress. The collection currently ships nine
 > modules, [`linux-vm`](./modules/linux-vm),
 > [`linux-vms`](./modules/linux-vms),
 > [`vm-scale-set`](./modules/vm-scale-set),
 > [`state-storage`](./modules/state-storage),
 > [`front-door-static-website`](./modules/front-door-static-website),
 > [`virtual-network`](./modules/virtual-network),
-> [`postgresql-flexible-server`](./modules/postgresql-flexible-server), and
-> [`container-registry`](./modules/container-registry). More
+> [`postgresql-flexible-server`](./modules/postgresql-flexible-server),
+> [`container-registry`](./modules/container-registry), and
+> [`storage-static-website`](./modules/storage-static-website). More
 > Azure modules will be added over time — see [Roadmap](#roadmap).
 
 The root module deliberately creates no resources. Pick a module from
@@ -25,7 +26,7 @@ Terraform Registry package address `hoangvankhoa205/devops/azurerm`.
 ```hcl
 module "vm" {
   source  = "hoangvankhoa205/devops/azurerm//modules/linux-vm"
-  version = "0.4.0"
+  version = "0.10.0"
 
   name                = "learn-vm"
   location            = "Southeast Asia"
@@ -55,6 +56,7 @@ production landing zone.
 | [`virtual-network`](./modules/virtual-network) | A VNet with subnets from a `for_each` map keyed by role, each with an auto-created NSG and association. Supports per-subnet service endpoints, delegation, and opt-in default outbound access. |
 | [`postgresql-flexible-server`](./modules/postgresql-flexible-server) | A private, delegated-subnet PostgreSQL Flexible Server with point-in-time-restore backups. The caller supplies the admin password from a secret store; it is never output. HA standby is opt-in and is not a readable replica. |
 | [`container-registry`](./modules/container-registry) | An Azure Container Registry with the local admin account disabled, so callers authenticate with Entra ID. Public network access is opt-in; the Private Endpoint and `privatelink.azurecr.io` DNS a private registry needs are left to the caller. |
+| [`storage-static-website`](./modules/storage-static-website) | A Storage account with static website hosting, TLS 1.2, and shared-key auth disabled (Entra ID/OIDC only). The public endpoint is opt-in and the firewall denies by default; the module manages hosting configuration, not website files. |
 
 ## Roadmap
 
