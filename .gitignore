@@ -24,3 +24,7 @@ override.tf.json
 # CLI config
 .terraformrc
 terraform.rc
+
+# Local agent tooling — not part of the published module collection
+.claude/
+skills-lock.json

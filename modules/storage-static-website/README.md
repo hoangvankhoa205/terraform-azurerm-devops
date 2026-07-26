@@ -13,9 +13,46 @@ network_rules = {
 
 Static website content is anonymous to clients that pass the network boundary;
 blob container public ACLs remain disabled. Upload content through an
-Entra-authenticated deployment step. A global Front Door composition should use
-the production storage/edge modules with Private Link rather than broad origin
-firewall exceptions. This module manages infrastructure, not website files.
+Entra-authenticated deployment step. This module manages infrastructure, not
+website files.
+
+## Usage
+
+```hcl
+module "site" {
+  source  = "hoangvankhoa205/devops/azurerm//modules/storage-static-website"
+  version = "0.15.0"
+
+  name                = "learnstaticweb001" # lowercase alphanumeric, globally unique
+  location            = "Southeast Asia"
+  resource_group_name = "learn-rg"
+
+  # A single-page app usually wants the 404 document pointed back at index.html
+  # so client-side routing works.
+  index_document     = "index.html"
+  error_404_document = "404.html"
+
+  # Required for anyone — including Front Door — to reach the site. The default
+  # is false, which builds a website nothing can load.
+  public_network_access_enabled = true
+}
+```
+
+Serve it through a CDN with a real HTTPS endpoint by passing `primary_web_host`
+— the bare hostname, not `primary_web_endpoint` — to
+[`front-door-static-website`](../front-door-static-website):
+
+```hcl
+module "cdn" {
+  source  = "hoangvankhoa205/devops/azurerm//modules/front-door-static-website"
+  version = "0.15.0"
+
+  name                = "learn-frontdoor"
+  endpoint_name       = "learn-static-endpoint-001"
+  resource_group_name = "learn-rg"
+  origin_host_name    = module.site.primary_web_host
+}
+```
 
 ## Uploading content
 
@@ -26,7 +63,7 @@ and Terraform derives the ordering on its own:
 ```hcl
 resource "azurerm_storage_blob" "index" {
   name                 = "index.html"
-  storage_container_id = module.static_site.web_container_id
+  storage_container_id = module.site.web_container_id
   type                 = "Block"
   content_type         = "text/html"
   source               = "site/index.html"
@@ -54,10 +91,6 @@ carries the dependency.
 | ---- | ------- |
 | <a name="provider_azurerm"></a> [azurerm](#provider\_azurerm) | >= 4.81.0, < 5.0.0 |
 
-## Modules
-
-No modules.
-
 ## Resources
 
 | Name | Type |
@@ -69,13 +102,13 @@ No modules.
 
 | Name | Description | Type | Default | Required |
 | ---- | ----------- | ---- | ------- | :------: |
-| <a name="input_error_404_document"></a> [error\_404\_document](#input\_error\_404\_document) | 404 page filename. | `string` | `"404.html"` | no |
-| <a name="input_index_document"></a> [index\_document](#input\_index\_document) | Default page filename. | `string` | `"index.html"` | no |
 | <a name="input_location"></a> [location](#input\_location) | Azure region. | `string` | n/a | yes |
 | <a name="input_name"></a> [name](#input\_name) | Globally unique storage account name. | `string` | n/a | yes |
+| <a name="input_resource_group_name"></a> [resource\_group\_name](#input\_resource\_group\_name) | Existing resource group name. | `string` | n/a | yes |
+| <a name="input_error_404_document"></a> [error\_404\_document](#input\_error\_404\_document) | 404 page filename. | `string` | `"404.html"` | no |
+| <a name="input_index_document"></a> [index\_document](#input\_index\_document) | Default page filename. | `string` | `"index.html"` | no |
 | <a name="input_network_rules"></a> [network\_rules](#input\_network\_rules) | Deny-by-default static website exceptions for trusted client IPs or connected subnets. | <pre>object({<br/>    bypass                     = optional(set(string), ["AzureServices"])<br/>    ip_rules                   = optional(set(string), [])<br/>    virtual_network_subnet_ids = optional(set(string), [])<br/>  })</pre> | `{}` | no |
 | <a name="input_public_network_access_enabled"></a> [public\_network\_access\_enabled](#input\_public\_network\_access\_enabled) | Expose the static website public endpoint. When true, deny-by-default network\_rules still apply. | `bool` | `false` | no |
-| <a name="input_resource_group_name"></a> [resource\_group\_name](#input\_resource\_group\_name) | Existing resource group name. | `string` | n/a | yes |
 | <a name="input_tags"></a> [tags](#input\_tags) | Resource tags. | `map(string)` | `{}` | no |
 
 ## Outputs

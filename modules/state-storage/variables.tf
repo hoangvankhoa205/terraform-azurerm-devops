@@ -3,11 +3,11 @@
 # ---------------------------------------------------------------------------------------------------------------------
 
 variable "name" {
-  description = "Globally unique storage account name."
+  description = "Globally unique storage account name. Lowercase letters and digits only — no hyphens, which is a common first-apply failure."
   type        = string
   validation {
     condition     = can(regex("^[a-z0-9]{3,24}$", var.name))
-    error_message = "name must be 3-24 lowercase alphanumeric characters."
+    error_message = "name must be 3-24 lowercase alphanumeric characters, with no hyphens or underscores."
   }
 }
 
@@ -26,13 +26,13 @@ variable "resource_group_name" {
 # ---------------------------------------------------------------------------------------------------------------------
 
 variable "container_name" {
-  description = "Private state container name."
+  description = "Container the state blobs live in. One container holds many workspaces, separated by the backend's `key`, so there is rarely a reason to change this."
   type        = string
   default     = "tfstate"
 }
 
 variable "replication_type" {
-  description = "Storage replication type."
+  description = "Replication mode. ZRS keeps three copies across availability zones in the region and is the right default for state — losing state is far more expensive than the small premium over LRS. GRS adds a second region, but its secondary is only readable after a failover."
   type        = string
   default     = "ZRS"
 }
@@ -64,7 +64,7 @@ variable "network_rules" {
 }
 
 variable "retention_days" {
-  description = "Blob and container soft-delete retention."
+  description = "How long a deleted state blob stays recoverable. Combined with versioning, this is the undo button for a corrupted apply. Azure permits 7-365."
   type        = number
   default     = 14
   validation {

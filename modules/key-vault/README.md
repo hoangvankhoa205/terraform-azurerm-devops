@@ -11,7 +11,41 @@ workload needs, instead of each object type dragging its own vault along.
 Pair it with [`key-vault-secret`](../key-vault-secret), or manage
 `azurerm_key_vault_key` / `_secret` / `_certificate` directly in your root.
 
-## Which of the three vault modules to use
+## Usage
+
+```hcl
+data "azurerm_client_config" "current" {}
+
+module "vault" {
+  source  = "hoangvankhoa205/devops/azurerm//modules/key-vault"
+  version = "0.15.0"
+
+  name                = "learn-key-vault-001" # 3-24 chars, globally unique
+  location            = "Southeast Asia"
+  resource_group_name = "learn-rg"
+  tenant_id           = data.azurerm_client_config.current.tenant_id
+}
+
+# The vault authorises through Entra RBAC, so grant yourself a data-plane role
+# before trying to read or write anything in it. The roles are per object type:
+# this one covers secrets and NOT keys or certificates.
+resource "azurerm_role_assignment" "admin" {
+  scope                = module.vault.key_vault_id
+  role_definition_name = "Key Vault Secrets Officer"
+  principal_id         = data.azurerm_client_config.current.object_id
+}
+```
+
+Pick the role for the objects you actually manage — holding one grants nothing
+for the others, and adding a module later usually means adding a role too:
+
+| Managing | Role |
+| --- | --- |
+| Secrets ([`key-vault-secret`](../key-vault-secret)) | `Key Vault Secrets Officer` |
+| Keys ([`key-vault-key`](../key-vault-key)) | `Key Vault Crypto Officer` |
+| Certificates ([`key-vault-certificate`](../key-vault-certificate)) | `Key Vault Certificates Officer` |
+
+## Which of the four vault modules to use
 
 The difference is not RBAC, and it is not an Azure restriction — a single
 Azure vault has always held keys, secrets and certificates side by side. The
@@ -22,6 +56,11 @@ modules differ only in which Terraform resources they create:
 | `key-vault` | `azurerm_key_vault` | no |
 | [`key-vault-key`](../key-vault-key) | `azurerm_key_vault` **and** `azurerm_key_vault_key` | no |
 | [`key-vault-secret`](../key-vault-secret) | `azurerm_key_vault_secret` per entry | **yes** — takes `key_vault_id` |
+| [`key-vault-certificate`](../key-vault-certificate) | `azurerm_key_vault_certificate` | **yes** — takes `key_vault_id` |
+
+Either vault-creating module satisfies the two that need one: a vault from
+`key-vault-key` holds secrets and certificates just as happily as one from
+`key-vault`.
 
 So the only combination that fails is two modules that each create a vault:
 
@@ -89,6 +128,32 @@ several Azure services refuse a CMK from a vault without it. A vault holding
 only secrets has no such requirement, so `false` is defensible there when the
 name needs to be reusable.
 
+### Turning it off is not enough on its own
+
+Soft delete is **always** on and cannot be disabled. Setting
+`purge_protection_enabled = false` only makes an early purge *possible* —
+something still has to perform it, or the name stays reserved anyway. Either
+let the provider do it:
+
+```hcl
+provider "azurerm" {
+  features {
+    key_vault {
+      purge_soft_delete_on_destroy    = true
+      recover_soft_deleted_key_vaults = false
+    }
+  }
+}
+```
+
+or purge by hand with `az keyvault purge --name <name> --location <region>`.
+
+Both need the `Microsoft.KeyVault/locations/deletedVaults/purge/action`
+permission, which `Contributor` does **not** include. Without it the destroy
+succeeds, the purge silently does not, and the next apply fails on a name that
+looks free but is not. `az keyvault list-deleted` shows what is still holding a
+name.
+
 <!-- BEGIN_TF_DOCS -->
 ## Requirements
 
@@ -103,10 +168,6 @@ name needs to be reusable.
 | ---- | ------- |
 | <a name="provider_azurerm"></a> [azurerm](#provider\_azurerm) | >= 4.81.0, < 5.0.0 |
 
-## Modules
-
-No modules.
-
 ## Resources
 
 | Name | Type |
@@ -119,13 +180,13 @@ No modules.
 | ---- | ----------- | ---- | ------- | :------: |
 | <a name="input_location"></a> [location](#input\_location) | Azure region. | `string` | n/a | yes |
 | <a name="input_name"></a> [name](#input\_name) | Globally unique Key Vault name. | `string` | n/a | yes |
+| <a name="input_resource_group_name"></a> [resource\_group\_name](#input\_resource\_group\_name) | Existing resource group name. | `string` | n/a | yes |
+| <a name="input_tenant_id"></a> [tenant\_id](#input\_tenant\_id) | Microsoft Entra tenant ID. | `string` | n/a | yes |
 | <a name="input_network_acls"></a> [network\_acls](#input\_network\_acls) | Deny-by-default vault exceptions for trusted deployment IPs or connected subnets. | <pre>object({<br/>    bypass                     = optional(string, "AzureServices")<br/>    ip_rules                   = optional(set(string), [])<br/>    virtual_network_subnet_ids = optional(set(string), [])<br/>  })</pre> | `{}` | no |
 | <a name="input_public_network_access_enabled"></a> [public\_network\_access\_enabled](#input\_public\_network\_access\_enabled) | Expose the Key Vault public endpoint. When true, deny-by-default network\_acls still apply. | `bool` | `false` | no |
 | <a name="input_purge_protection_enabled"></a> [purge\_protection\_enabled](#input\_purge\_protection\_enabled) | Block permanent deletion until the soft-delete window expires. IRREVERSIBLE — Azure does not allow turning this off once a vault has it, so a destroyed vault cannot be purged early and its globally unique name stays reserved for soft\_delete\_retention\_days. Required by services that accept a customer-managed key. Set false only for throwaway vaults you expect to destroy and recreate under the same name. | `bool` | `true` | no |
-| <a name="input_resource_group_name"></a> [resource\_group\_name](#input\_resource\_group\_name) | Existing resource group name. | `string` | n/a | yes |
 | <a name="input_soft_delete_retention_days"></a> [soft\_delete\_retention\_days](#input\_soft\_delete\_retention\_days) | Days a deleted vault stays recoverable before it can be purged. With purge\_protection\_enabled the vault CANNOT be purged before this elapses, and the name is unusable for the whole window — so a long value is expensive in a destroy/recreate loop. Azure permits 7-90. | `number` | `7` | no |
 | <a name="input_tags"></a> [tags](#input\_tags) | Resource tags. | `map(string)` | `{}` | no |
-| <a name="input_tenant_id"></a> [tenant\_id](#input\_tenant\_id) | Microsoft Entra tenant ID. | `string` | n/a | yes |
 
 ## Outputs
 

@@ -5,20 +5,32 @@ create a vault — pass the `key_vault_id` output of
 [`key-vault`](../key-vault), so a single vault can hold secrets, keys and
 certificates together.
 
+## Usage
+
+This example needs `hashicorp/random` in your root's `required_providers`
+alongside `azurerm` — modules cannot declare providers for you.
+
 ```hcl
+data "azurerm_client_config" "current" {}
+
+resource "random_password" "db" {
+  length  = 32
+  special = true
+}
+
 module "vault" {
   source  = "hoangvankhoa205/devops/azurerm//modules/key-vault"
-  version = "0.14.0"
+  version = "0.15.0"
 
   name                = "learn-kv-0001"
   location            = "Southeast Asia"
-  resource_group_name = azurerm_resource_group.this.name
+  resource_group_name = "learn-rg"
   tenant_id           = data.azurerm_client_config.current.tenant_id
 }
 
 module "secrets" {
   source  = "hoangvankhoa205/devops/azurerm//modules/key-vault-secret"
-  version = "0.14.0"
+  version = "0.15.0"
 
   key_vault_id = module.vault.key_vault_id
 
@@ -94,10 +106,6 @@ Assign in the root and allow for propagation delay before the write.
 | Name | Version |
 | ---- | ------- |
 | <a name="provider_azurerm"></a> [azurerm](#provider\_azurerm) | >= 4.81.0, < 5.0.0 |
-
-## Modules
-
-No modules.
 
 ## Resources
 

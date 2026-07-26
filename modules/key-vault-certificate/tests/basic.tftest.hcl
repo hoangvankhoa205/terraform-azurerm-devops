@@ -150,6 +150,139 @@ run "ec_key_sends_the_curve" {
   }
 }
 
+run "exportable_and_reuse_key_defaults" {
+  command = plan
+
+  assert {
+    condition = (
+      azurerm_key_vault_certificate.this.certificate_policy[0].key_properties[0].exportable &&
+      !azurerm_key_vault_certificate.this.certificate_policy[0].key_properties[0].reuse_key
+    )
+    error_message = "The key must be exportable by default and must not be reused across renewals."
+  }
+}
+
+# A non-exportable key cannot be pulled out as a PFX, which is exactly what an
+# Application Gateway listener does — so this combination is legal but breaks
+# the main consumer, and the variable description says so.
+run "exportable_can_be_turned_off" {
+  command = plan
+  variables {
+    exportable = false
+  }
+
+  assert {
+    condition     = !azurerm_key_vault_certificate.this.certificate_policy[0].key_properties[0].exportable
+    error_message = "exportable must be honoured when a caller turns it off."
+  }
+}
+
+run "reuse_key_can_be_turned_on" {
+  command = plan
+  variables {
+    reuse_key = true
+  }
+
+  assert {
+    condition     = azurerm_key_vault_certificate.this.certificate_policy[0].key_properties[0].reuse_key
+    error_message = "reuse_key must be honoured when a caller turns it on."
+  }
+}
+
+run "content_type_defaults_to_pfx" {
+  command = plan
+
+  assert {
+    condition     = azurerm_key_vault_certificate.this.certificate_policy[0].secret_properties[0].content_type == "application/x-pkcs12"
+    error_message = "The backing secret must default to PFX, which is what Application Gateway expects."
+  }
+}
+
+run "content_type_can_be_pem" {
+  command = plan
+  variables {
+    content_type = "application/x-pem-file"
+  }
+
+  assert {
+    condition     = azurerm_key_vault_certificate.this.certificate_policy[0].secret_properties[0].content_type == "application/x-pem-file"
+    error_message = "A PEM content type must reach the policy."
+  }
+}
+
+run "renew_window_is_configurable" {
+  command = plan
+  variables {
+    renew_days_before_expiry = 60
+  }
+
+  assert {
+    condition     = azurerm_key_vault_certificate.this.certificate_policy[0].lifetime_action[0].trigger[0].days_before_expiry == 60
+    error_message = "renew_days_before_expiry must reach the lifetime action trigger."
+  }
+}
+
+run "extended_key_usage_supports_mutual_tls" {
+  command = plan
+  variables {
+    extended_key_usage = ["1.3.6.1.5.5.7.3.1", "1.3.6.1.5.5.7.3.2"]
+  }
+
+  assert {
+    condition     = length(azurerm_key_vault_certificate.this.certificate_policy[0].x509_certificate_properties[0].extended_key_usage) == 2
+    error_message = "A caller must be able to add clientAuth for mutual TLS."
+  }
+}
+
+run "tags_reach_the_certificate" {
+  command = plan
+  variables {
+    tags = { env = "learn" }
+  }
+
+  assert {
+    condition     = azurerm_key_vault_certificate.this.tags["env"] == "learn"
+    error_message = "Tags must reach the certificate."
+  }
+}
+
+# ---------------------------------------------------------------------------------------------------------------------
+# OUTPUTS
+# ---------------------------------------------------------------------------------------------------------------------
+
+# The distinction these five outputs draw is the module's headline gotcha: a
+# certificate is stored twice, and the thing an Application Gateway listener
+# consumes is the SECRET id, not the certificate id.
+run "exposes_certificate_and_secret_ids_separately" {
+  command = apply
+
+  assert {
+    condition = (
+      output.certificate_id == azurerm_key_vault_certificate.this.id &&
+      output.versionless_id == azurerm_key_vault_certificate.this.versionless_id &&
+      output.secret_id == azurerm_key_vault_certificate.this.secret_id &&
+      output.versionless_secret_id == azurerm_key_vault_certificate.this.versionless_secret_id &&
+      output.thumbprint == azurerm_key_vault_certificate.this.thumbprint
+    )
+    error_message = "All five certificate identifiers must be exposed."
+  }
+
+  # If these ever collapsed to the same value the documented distinction would
+  # be meaningless and callers could not tell which one they had.
+  assert {
+    condition = (
+      output.certificate_id != output.secret_id &&
+      output.versionless_id != output.versionless_secret_id &&
+      output.certificate_id != output.versionless_id
+    )
+    error_message = "Certificate ids and secret ids must be distinct, and versioned must differ from versionless."
+  }
+}
+
+# ---------------------------------------------------------------------------------------------------------------------
+# VALIDATION
+# ---------------------------------------------------------------------------------------------------------------------
+
 run "rejects_hsm_key_type" {
   command = plan
   variables {
@@ -184,4 +317,50 @@ run "rejects_odd_key_size" {
   }
 
   expect_failures = [var.key_size]
+}
+
+run "rejects_an_unknown_curve" {
+  command = plan
+  variables {
+    key_type = "EC"
+    curve    = "P-192"
+  }
+
+  expect_failures = [var.curve]
+}
+
+run "rejects_zero_validity" {
+  command = plan
+  variables {
+    validity_in_months = 0
+  }
+
+  expect_failures = [var.validity_in_months]
+}
+
+run "rejects_validity_beyond_ten_years" {
+  command = plan
+  variables {
+    validity_in_months = 121
+  }
+
+  expect_failures = [var.validity_in_months]
+}
+
+run "rejects_an_unknown_content_type" {
+  command = plan
+  variables {
+    content_type = "application/x-pkcs7"
+  }
+
+  expect_failures = [var.content_type]
+}
+
+run "rejects_a_zero_day_renew_window" {
+  command = plan
+  variables {
+    renew_days_before_expiry = 0
+  }
+
+  expect_failures = [var.renew_days_before_expiry]
 }

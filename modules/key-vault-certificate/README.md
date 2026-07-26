@@ -4,10 +4,16 @@ A certificate that **Key Vault issues**, in an existing vault. Pass the
 `key_vault_id` output of [`key-vault`](../key-vault); this module creates no
 vault, so one vault can hold certificates alongside keys and secrets.
 
+## Usage
+
+`module.vault` below is a [`key-vault`](../key-vault) (or
+[`key-vault-key`](../key-vault-key)) instance declared alongside this one; see
+that module's README for its own arguments.
+
 ```hcl
 module "tls" {
   source  = "hoangvankhoa205/devops/azurerm//modules/key-vault-certificate"
-  version = "0.14.0"
+  version = "0.15.0"
 
   key_vault_id = module.vault.key_vault_id
   name         = "app-tls"
@@ -92,7 +98,34 @@ not through your credentials, so that identity needs its own role — reading th
 backing secret requires **Key Vault Secrets User** in addition to any
 certificate role.
 
-Assign in the root and allow for propagation delay before use.
+Assign in the root and allow for propagation delay before use. Propagation is
+minutes, not seconds, so a single apply that creates the role and immediately
+uses it will fail intermittently. Order it explicitly:
+
+```hcl
+resource "time_sleep" "rbac" {
+  depends_on      = [azurerm_role_assignment.certs]
+  create_duration = "60s"
+}
+
+module "tls" {
+  # ...
+  depends_on = [time_sleep.rbac]
+}
+```
+
+## The role is only one of two barriers
+
+A role grants permission; it does not grant reachability.
+[`key-vault`](../key-vault) creates the vault with public network access
+disabled and its ACL set to `Deny`, so an Application Gateway with every correct
+role still cannot fetch the certificate until it is allowed through the network
+boundary — via a Private Endpoint, a service endpoint on its subnet, or an IP
+exception.
+
+The two failures look nothing alike: a missing role gives a 403, a blocked
+network gives a timeout or a connection failure. Check which one you have before
+adding more roles.
 
 ## HSM key types need a premium vault
 
@@ -115,10 +148,6 @@ at apply.
 | ---- | ------- |
 | <a name="provider_azurerm"></a> [azurerm](#provider\_azurerm) | >= 4.81.0, < 5.0.0 |
 
-## Modules
-
-No modules.
-
 ## Resources
 
 | Name | Type |
@@ -129,6 +158,9 @@ No modules.
 
 | Name | Description | Type | Default | Required |
 | ---- | ----------- | ---- | ------- | :------: |
+| <a name="input_key_vault_id"></a> [key\_vault\_id](#input\_key\_vault\_id) | ID of an existing Key Vault, typically the key\_vault\_id output of the key-vault module. This module does not create a vault. | `string` | n/a | yes |
+| <a name="input_name"></a> [name](#input\_name) | Certificate name inside the vault. | `string` | n/a | yes |
+| <a name="input_subject"></a> [subject](#input\_subject) | X.509 subject distinguished name, for example CN=example.com. Modern TLS clients ignore the common name and match on subject alternative names, so set dns\_names too. | `string` | n/a | yes |
 | <a name="input_auto_renew"></a> [auto\_renew](#input\_auto\_renew) | Have Key Vault reissue the certificate before it expires. Renewal produces a new version; consumers that reference the versionless secret ID pick it up, consumers pinned to a version do not. | `bool` | `true` | no |
 | <a name="input_content_type"></a> [content\_type](#input\_content\_type) | Format the certificate's backing secret is stored in. application/x-pkcs12 yields a PFX, which is what Application Gateway expects; application/x-pem-file yields PEM. | `string` | `"application/x-pkcs12"` | no |
 | <a name="input_curve"></a> [curve](#input\_curve) | Elliptic curve name. Ignored when key\_type is RSA. | `string` | `"P-256"` | no |
@@ -139,11 +171,8 @@ No modules.
 | <a name="input_key_size"></a> [key\_size](#input\_key\_size) | RSA key size. Ignored when key\_type is EC. | `number` | `2048` | no |
 | <a name="input_key_type"></a> [key\_type](#input\_key\_type) | Key algorithm. RSA or EC only — the HSM-backed variants (RSA-HSM, EC-HSM) need a premium vault, and the key-vault module in this collection creates a standard one. | `string` | `"RSA"` | no |
 | <a name="input_key_usage"></a> [key\_usage](#input\_key\_usage) | X.509 key usage. Defaults to the pair a TLS server certificate actually needs. The provider's own example lists six including keyCertSign, which would let the certificate sign other certificates — deliberately not the default here. | `set(string)` | <pre>[<br/>  "digitalSignature",<br/>  "keyEncipherment"<br/>]</pre> | no |
-| <a name="input_key_vault_id"></a> [key\_vault\_id](#input\_key\_vault\_id) | ID of an existing Key Vault, typically the key\_vault\_id output of the key-vault module. This module does not create a vault. | `string` | n/a | yes |
-| <a name="input_name"></a> [name](#input\_name) | Certificate name inside the vault. | `string` | n/a | yes |
 | <a name="input_renew_days_before_expiry"></a> [renew\_days\_before\_expiry](#input\_renew\_days\_before\_expiry) | How many days before expiry auto-renewal fires. Ignored when auto\_renew is false. | `number` | `30` | no |
 | <a name="input_reuse_key"></a> [reuse\_key](#input\_reuse\_key) | Reuse the existing key material on renewal instead of generating a new key. False gives a fresh key each renewal, which is the safer default. | `bool` | `false` | no |
-| <a name="input_subject"></a> [subject](#input\_subject) | X.509 subject distinguished name, for example CN=example.com. Modern TLS clients ignore the common name and match on subject alternative names, so set dns\_names too. | `string` | n/a | yes |
 | <a name="input_tags"></a> [tags](#input\_tags) | Resource tags. | `map(string)` | `{}` | no |
 | <a name="input_validity_in_months"></a> [validity\_in\_months](#input\_validity\_in\_months) | Certificate lifetime in months. | `number` | `12` | no |
 

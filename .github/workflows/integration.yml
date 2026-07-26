@@ -1,0 +1,89 @@
+# Real Azure integration tests. Manual only — never on push or pull_request,
+# because every run provisions billable resources.
+#
+# SETUP REQUIRED before this can run. Create an `integration` environment with:
+#   vars:    AZURE_CLIENT_ID, AZURE_TENANT_ID, AZURE_SUBSCRIPTION_ID
+# The client must be federated to this repository — modules/github-actions-
+# federated-identity builds exactly that identity — and needs rights to create a
+# resource group, VNet, VM, and Key Vault, plus role assignments at the vault's
+# scope (User Access Administrator or Owner), since the run grants itself
+# Key Vault Secrets Officer.
+#
+# Until that environment exists this workflow will fail at the login step, which
+# is the intended behaviour: it should be impossible to run it by accident.
+
+name: Integration
+
+on:
+  workflow_dispatch:
+    inputs:
+      location:
+        description: Azure region to create the disposable environment in
+        required: false
+        default: Southeast Asia
+
+permissions:
+  contents: read
+  id-token: write # required for OIDC; no client secret is stored
+
+concurrency:
+  # Serialised: concurrent runs would race on subscription quota and on
+  # role-assignment propagation.
+  group: integration
+  cancel-in-progress: false
+
+jobs:
+  integration:
+    name: apply against Azure
+    runs-on: ubuntu-latest
+    environment: integration
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+
+      # Only the binary: the archive also carries LICENSE.txt, which already
+      # exists in /usr/local/bin on GitHub runners and would make unzip prompt.
+      - name: Install Terraform
+        run: |
+          curl -fsSL -o terraform.zip \
+            "https://releases.hashicorp.com/terraform/1.14.9/terraform_1.14.9_linux_amd64.zip"
+          unzip -o -q terraform.zip terraform -d /usr/local/bin
+          terraform version
+
+      - name: Azure login
+        uses: azure/login@a457da9ea143d694b1b9c7c869ebb04ebe844ef5 # v2.3.0
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+
+      # The azurerm provider reads these rather than the az CLI session.
+      - name: Run integration tests
+        working-directory: tests/integration
+        env:
+          ARM_USE_OIDC: "true"
+          ARM_CLIENT_ID: ${{ vars.AZURE_CLIENT_ID }}
+          ARM_TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
+          ARM_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+          TF_VAR_location: ${{ inputs.location }}
+        run: |
+          terraform init -backend=false -no-color
+          terraform test -no-color
+
+      # terraform test tears down what it created, including on failure. This
+      # only catches a run killed mid-flight, which would otherwise leave a
+      # resource group behind.
+      - name: Sweep any leftover environments
+        if: always()
+        env:
+          ARM_USE_OIDC: "true"
+        run: |
+          leftovers=$(az group list --tag purpose=terraform-azurerm-devops-integration \
+            --query '[].name' -o tsv || true)
+          if [ -n "$leftovers" ]; then
+            echo "::warning::Deleting leftover resource groups: $leftovers"
+            echo "$leftovers" | xargs -r -n1 az group delete --yes --no-wait
+          else
+            echo "nothing left behind"
+          fi
