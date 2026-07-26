@@ -42,11 +42,13 @@ jobs:
         with:
           persist-credentials: false
 
+      # Only the binary: the archive also carries LICENSE.txt, which already
+      # exists in /usr/local/bin on GitHub runners and would make unzip prompt.
       - name: Install Terraform
         run: |
           curl -fsSL -o terraform.zip \
             "https://releases.hashicorp.com/terraform/1.14.9/terraform_1.14.9_linux_amd64.zip"
-          unzip -q terraform.zip -d /usr/local/bin
+          unzip -o -q terraform.zip terraform -d /usr/local/bin
           terraform version
 
       - name: Azure login

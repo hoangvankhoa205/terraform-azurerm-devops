@@ -36,11 +36,14 @@ jobs:
         with:
           persist-credentials: false
 
+      # Extract only the binary: the archive also carries LICENSE.txt, and
+      # /usr/local/bin/LICENSE.txt already exists on GitHub runners, so a plain
+      # unzip stops to ask whether to replace it and fails on EOF.
       - name: Install Terraform
         run: |
           curl -fsSL -o terraform.zip \
             "https://releases.hashicorp.com/terraform/${TERRAFORM_LATEST}/terraform_${TERRAFORM_LATEST}_linux_amd64.zip"
-          unzip -q terraform.zip -d /usr/local/bin
+          unzip -o -q terraform.zip terraform -d /usr/local/bin
           terraform version
 
       - name: Check formatting
@@ -99,18 +102,19 @@ jobs:
         with:
           persist-credentials: false
 
+      # Only the binary — see the note in the `static` job above.
       - name: Install Terraform ${{ env.TERRAFORM_FLOOR }}
         run: |
           curl -fsSL -o terraform.zip \
             "https://releases.hashicorp.com/terraform/${TERRAFORM_FLOOR}/terraform_${TERRAFORM_FLOOR}_linux_amd64.zip"
-          unzip -q terraform.zip -d /usr/local/bin
+          unzip -o -q terraform.zip terraform -d /usr/local/bin
           terraform version
 
       - name: Install tflint
         run: |
           curl -fsSL -o tflint.zip \
             "https://github.com/terraform-linters/tflint/releases/download/v${TFLINT}/tflint_linux_amd64.zip"
-          unzip -q tflint.zip -d /usr/local/bin
+          unzip -o -q tflint.zip tflint -d /usr/local/bin
           tflint --version
 
       # -backend=false because a reusable module configures no backend; this
@@ -165,6 +169,7 @@ jobs:
         with:
           persist-credentials: false
 
+      # Only the named binary — see the note in the `static` job above.
       - name: Install ${{ matrix.tool }}
         run: |
           if [ "${{ matrix.tool }}" = "terraform" ]; then
@@ -174,7 +179,7 @@ jobs:
             curl -fsSL -o tool.zip \
               "https://github.com/opentofu/opentofu/releases/download/v${{ matrix.version }}/tofu_${{ matrix.version }}_linux_amd64.zip"
           fi
-          unzip -q tool.zip -d /usr/local/bin
+          unzip -o -q tool.zip "${{ matrix.tool }}" -d /usr/local/bin
           ${{ matrix.tool }} version
 
       - name: Test every module

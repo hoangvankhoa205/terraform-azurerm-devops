@@ -85,9 +85,12 @@ variable "high_availability" {
   })
   default = null
   validation {
-    condition     = var.high_availability == null || contains(["SameZone", "ZoneRedundant"], var.high_availability.mode)
+    # try() rather than `var.high_availability == null || ...`: on Terraform
+    # 1.9 the || operator evaluates both operands, so the attribute access
+    # fails outright when the object is null. Falling back to a legal mode
+    # makes the null case pass without depending on short-circuit behaviour.
+    condition     = contains(["SameZone", "ZoneRedundant"], try(var.high_availability.mode, "SameZone"))
     error_message = "HA mode must be SameZone or ZoneRedundant."
-
   }
 }
 
