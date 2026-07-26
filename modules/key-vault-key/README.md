@@ -3,6 +3,16 @@
 Creates an RBAC-enabled Key Vault with purge protection and one RSA key. Public
 network access is disabled by default.
 
+The key is the point here: this is the shortest path to a customer-managed key.
+The vault it creates is an ordinary one, so it can still hold secrets and
+certificates — pass `key_vault_id` to
+[`key-vault-secret`](../key-vault-secret) to add credentials alongside the key,
+in the same vault.
+
+If you want no key at all, or the key managed explicitly in your own root, use
+[`key-vault`](../key-vault) instead. Do not call both: each creates a vault, so
+you would get two.
+
 ## Two independent barriers stand between a caller and the key
 
 Creating `azurerm_key_vault_key` is a **data-plane** call. It has to clear both
