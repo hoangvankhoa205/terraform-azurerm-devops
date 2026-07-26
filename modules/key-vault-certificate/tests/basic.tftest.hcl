@@ -49,18 +49,21 @@ run "plans_a_self_signed_tls_certificate" {
 run "defaults_to_least_privilege_key_usage" {
   command = plan
 
+  # Terraform has no setequal function, and these two attributes are not even
+  # the same type — key_usage is a set, extended_key_usage a list. Subtracting
+  # both directions tests equality regardless of type or ordering.
   assert {
-    condition = setequal(
-      azurerm_key_vault_certificate.this.certificate_policy[0].x509_certificate_properties[0].key_usage,
-      ["digitalSignature", "keyEncipherment"]
+    condition = (
+      length(setsubtract(azurerm_key_vault_certificate.this.certificate_policy[0].x509_certificate_properties[0].key_usage, ["digitalSignature", "keyEncipherment"])) == 0 &&
+      length(setsubtract(["digitalSignature", "keyEncipherment"], azurerm_key_vault_certificate.this.certificate_policy[0].x509_certificate_properties[0].key_usage)) == 0
     )
     error_message = "Default key_usage must be the TLS server pair, not the provider example's broader set."
 
   }
   assert {
-    condition = setequal(
-      azurerm_key_vault_certificate.this.certificate_policy[0].x509_certificate_properties[0].extended_key_usage,
-      ["1.3.6.1.5.5.7.3.1"]
+    condition = (
+      length(setsubtract(azurerm_key_vault_certificate.this.certificate_policy[0].x509_certificate_properties[0].extended_key_usage, ["1.3.6.1.5.5.7.3.1"])) == 0 &&
+      length(setsubtract(["1.3.6.1.5.5.7.3.1"], azurerm_key_vault_certificate.this.certificate_policy[0].x509_certificate_properties[0].extended_key_usage)) == 0
     )
     error_message = "Default extended_key_usage must be serverAuth."
 
@@ -86,9 +89,9 @@ run "emits_the_san_block_when_dns_names_given" {
   }
 
   assert {
-    condition = setequal(
-      azurerm_key_vault_certificate.this.certificate_policy[0].x509_certificate_properties[0].subject_alternative_names[0].dns_names,
-      ["example.com", "www.example.com"]
+    condition = (
+      length(setsubtract(azurerm_key_vault_certificate.this.certificate_policy[0].x509_certificate_properties[0].subject_alternative_names[0].dns_names, ["example.com", "www.example.com"])) == 0 &&
+      length(setsubtract(["example.com", "www.example.com"], azurerm_key_vault_certificate.this.certificate_policy[0].x509_certificate_properties[0].subject_alternative_names[0].dns_names)) == 0
     )
     error_message = "dns_names must reach subject_alternative_names."
 
@@ -124,9 +127,11 @@ run "auto_renew_off_emits_no_lifetime_action" {
   }
 }
 
-# key_size applies to RSA and curve to EC. Sending both would be contradictory,
-# so the unused one is null.
-run "ec_key_sends_curve_and_no_key_size" {
+# key_size applies to RSA and curve to EC, so main.tf nulls whichever does not
+# apply. Only the curve half is assertable: key_size is optional/computed, so
+# nulling it leaves the attribute unknown at plan and filled by the provider at
+# apply — it never reads back as null, whichever command is used.
+run "ec_key_sends_the_curve" {
   command = plan
   variables {
     key_type = "EC"
@@ -134,11 +139,13 @@ run "ec_key_sends_curve_and_no_key_size" {
   }
 
   assert {
-    condition = (
-      azurerm_key_vault_certificate.this.certificate_policy[0].key_properties[0].curve == "P-384" &&
-      azurerm_key_vault_certificate.this.certificate_policy[0].key_properties[0].key_size == null
-    )
-    error_message = "An EC key must carry a curve and no key_size."
+    condition     = azurerm_key_vault_certificate.this.certificate_policy[0].key_properties[0].curve == "P-384"
+    error_message = "An EC key must carry the requested curve."
+
+  }
+  assert {
+    condition     = azurerm_key_vault_certificate.this.certificate_policy[0].key_properties[0].key_type == "EC"
+    error_message = "key_type must reach the policy."
 
   }
 }
