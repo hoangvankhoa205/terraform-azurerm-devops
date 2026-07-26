@@ -195,7 +195,7 @@ run "exposes_id_and_fqdn_but_never_the_password" {
 
   assert {
     condition = (
-      output.id == azurerm_postgresql_flexible_server.this.id &&
+      output.server_id == azurerm_postgresql_flexible_server.this.id &&
       output.fqdn == azurerm_postgresql_flexible_server.this.fqdn
     )
     error_message = "The server id and FQDN must be exposed."
@@ -203,7 +203,7 @@ run "exposes_id_and_fqdn_but_never_the_password" {
 
   assert {
     condition = (
-      output.id != var.administrator_password &&
+      output.server_id != var.administrator_password &&
       output.fqdn != var.administrator_password
     )
     error_message = "No output may carry the administrator password."

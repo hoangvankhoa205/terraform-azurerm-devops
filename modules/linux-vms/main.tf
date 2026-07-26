@@ -1,3 +1,11 @@
+# Several private Ubuntu VMs from one map, where linux-vm builds exactly one.
+# Use this when a set of machines shares a shape and differs only in name,
+# subnet, or size; use linux-vm when there is genuinely one.
+#
+# There is no public IP resource here at all, unlike linux-vm — reaching these
+# machines means a bastion, a VPN, a peered network, or the serial console that
+# boot_diagnostics enables below.
+
 resource "azurerm_network_interface" "this" {
   for_each = var.instances
 
@@ -23,9 +31,14 @@ resource "azurerm_linux_virtual_machine" "this" {
   size                            = each.value.size
   admin_username                  = each.value.admin_username
   disable_password_authentication = true
-  network_interface_ids           = [azurerm_network_interface.this[each.key].id]
-  custom_data                     = each.value.custom_data == null ? null : base64encode(each.value.custom_data)
-  tags                            = var.tags
+  # Indexed by the same key, so each VM gets its own NIC rather than sharing one.
+  network_interface_ids = [azurerm_network_interface.this[each.key].id]
+
+  # Encoded here so the caller passes readable cloud-init text. Encoding it
+  # again before passing it in produces a VM that boots and silently ignores the
+  # config.
+  custom_data = each.value.custom_data == null ? null : base64encode(each.value.custom_data)
+  tags        = var.tags
 
   admin_ssh_key {
     username   = each.value.admin_username

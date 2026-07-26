@@ -74,7 +74,7 @@ optional; `ssh_public_key` is shared across all instances. Outputs (`ids`,
 
 | Name | Description |
 | ---- | ----------- |
-| <a name="output_ids"></a> [ids](#output\_ids) | VM IDs keyed by logical name. |
-| <a name="output_principal_ids"></a> [principal\_ids](#output\_principal\_ids) | Managed identity principal IDs keyed by name. |
-| <a name="output_private_ip_addresses"></a> [private\_ip\_addresses](#output\_private\_ip\_addresses) | Private IPs keyed by logical name. |
+| <a name="output_ids"></a> [ids](#output\_ids) | Virtual machine resource IDs keyed by logical name. |
+| <a name="output_principal_ids"></a> [principal\_ids](#output\_principal\_ids) | System-assigned identity principal IDs keyed by logical name. Grant Azure roles to these so each VM can reach Key Vault, Storage, or a registry without a stored credential. |
+| <a name="output_private_ip_addresses"></a> [private\_ip\_addresses](#output\_private\_ip\_addresses) | Private addresses keyed by logical name. These are the only addresses these VMs have; there is no public IP. |
 <!-- END_TF_DOCS -->

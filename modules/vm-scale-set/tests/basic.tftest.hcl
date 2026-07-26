@@ -180,7 +180,7 @@ run "exposes_id_and_principal_id" {
 
   assert {
     condition = (
-      output.id == azurerm_linux_virtual_machine_scale_set.this.id &&
+      output.scale_set_id == azurerm_linux_virtual_machine_scale_set.this.id &&
       output.principal_id == one(azurerm_linux_virtual_machine_scale_set.this.identity).principal_id
     )
     error_message = "The scale set id and its identity principal must be exposed."

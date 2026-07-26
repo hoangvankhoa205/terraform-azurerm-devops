@@ -86,7 +86,7 @@ run "exposes_id_and_login_server" {
 
   assert {
     condition = (
-      output.id == azurerm_container_registry.this.id &&
+      output.registry_id == azurerm_container_registry.this.id &&
       output.login_server == azurerm_container_registry.this.login_server
     )
     error_message = "The registry id and login hostname must be exposed."

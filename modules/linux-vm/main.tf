@@ -1,3 +1,13 @@
+# One Ubuntu VM, its NIC, and optionally a public IP. The subnet, the network
+# security rules, and any bastion are the caller's.
+#
+# The VM is private by default and there is no password login, so the only ways
+# in are a bastion, a VPN, a peered network, or opting into the public IP below.
+
+# count rather than a separate module, so public_ip_enabled = false leaves no
+# address allocated and nothing to pay for. Note that creating the address does
+# NOT open any inbound path on its own: an NSG rule permitting port 22 is still
+# the caller's to add, deliberately, so opting in is two decisions rather than one.
 resource "azurerm_public_ip" "this" {
   count = var.public_ip_enabled ? 1 : 0
 
@@ -20,8 +30,10 @@ resource "azurerm_network_interface" "this" {
     name                          = "private"
     subnet_id                     = var.subnet_id
     private_ip_address_allocation = "Dynamic"
-    public_ip_address_id          = one(azurerm_public_ip.this[*].id)
 
+    # one() collapses the count'd resource to a single value or null, so the
+    # same expression covers both branches without a conditional.
+    public_ip_address_id = one(azurerm_public_ip.this[*].id)
   }
 }
 
@@ -33,8 +45,12 @@ resource "azurerm_linux_virtual_machine" "this" {
   admin_username                  = var.admin_username
   disable_password_authentication = true
   network_interface_ids           = [azurerm_network_interface.this.id]
-  custom_data                     = var.custom_data == null ? null : base64encode(var.custom_data)
-  tags                            = var.tags
+
+  # Encoded here so the caller passes readable cloud-init text. Encoding it
+  # again before passing it in produces a VM that boots and silently ignores the
+  # config, which is hard to spot after the fact.
+  custom_data = var.custom_data == null ? null : base64encode(var.custom_data)
+  tags        = var.tags
 
   admin_ssh_key {
     username   = var.admin_username

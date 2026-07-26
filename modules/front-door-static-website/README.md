@@ -34,18 +34,18 @@ Premium Private Link where the origin must not be public.
 
 | Name | Description | Type | Default | Required |
 | ---- | ----------- | ---- | ------- | :------: |
-| <a name="input_endpoint_name"></a> [endpoint\_name](#input\_endpoint\_name) | Globally unique Front Door endpoint name. | `string` | n/a | yes |
-| <a name="input_name"></a> [name](#input\_name) | Front Door profile name. | `string` | n/a | yes |
-| <a name="input_origin_host_name"></a> [origin\_host\_name](#input\_origin\_host\_name) | Static website origin host without a URL scheme. | `string` | n/a | yes |
+| <a name="input_endpoint_name"></a> [endpoint\_name](#input\_endpoint\_name) | Front Door endpoint name. Unlike the profile name this DOES have to be globally unique: it becomes the public hostname, <endpoint\_name>.z01.azurefd.net. | `string` | n/a | yes |
+| <a name="input_name"></a> [name](#input\_name) | Front Door profile name. Scoped to the resource group, so it does not need to be globally unique. | `string` | n/a | yes |
+| <a name="input_origin_host_name"></a> [origin\_host\_name](#input\_origin\_host\_name) | Static website origin host, with no URL scheme — for example learnstaticweb001.z23.web.core.windows.net. Pass storage-static-website's primary\_web\_host output, NOT primary\_web\_endpoint: the latter is a full https:// URL and is rejected here. The value doubles as the origin host header, so the origin's TLS certificate is validated against it. | `string` | n/a | yes |
 | <a name="input_resource_group_name"></a> [resource\_group\_name](#input\_resource\_group\_name) | Existing resource group name. | `string` | n/a | yes |
-| <a name="input_sku_name"></a> [sku\_name](#input\_sku\_name) | Front Door Standard or Premium SKU. | `string` | `"Standard_AzureFrontDoor"` | no |
+| <a name="input_sku_name"></a> [sku\_name](#input\_sku\_name) | Front Door tier. Standard covers a static site. Premium adds managed WAF rule sets, bot protection, and Private Link to the origin — the last of which is the only way to keep the storage account off the public Internet while Front Door still reaches it. Classic is retired and rejected. | `string` | `"Standard_AzureFrontDoor"` | no |
 | <a name="input_tags"></a> [tags](#input\_tags) | Resource tags. | `map(string)` | `{}` | no |
 
 ## Outputs
 
 | Name | Description |
 | ---- | ----------- |
-| <a name="output_endpoint_host_name"></a> [endpoint\_host\_name](#output\_endpoint\_host\_name) | Front Door default hostname. |
-| <a name="output_endpoint_id"></a> [endpoint\_id](#output\_endpoint\_id) | Front Door endpoint ID. |
-| <a name="output_profile_id"></a> [profile\_id](#output\_profile\_id) | Front Door profile ID. |
+| <a name="output_endpoint_host_name"></a> [endpoint\_host\_name](#output\_endpoint\_host\_name) | Public hostname Front Door serves the site on, <endpoint\_name>.z01.azurefd.net. Azure allocates the middle segment, so it cannot be predicted before apply. Pass https://<this> to endpoint-test to verify the site end to end. |
+| <a name="output_endpoint_id"></a> [endpoint\_id](#output\_endpoint\_id) | Front Door endpoint resource ID. |
+| <a name="output_profile_id"></a> [profile\_id](#output\_profile\_id) | Front Door profile resource ID. Attach a WAF policy or a custom domain at this scope. |
 <!-- END_TF_DOCS -->

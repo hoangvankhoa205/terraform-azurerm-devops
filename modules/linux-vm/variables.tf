@@ -3,7 +3,7 @@
 # ---------------------------------------------------------------------------------------------------------------------
 
 variable "name" {
-  description = "VM name."
+  description = "Virtual machine name. Also names the NIC (<name>-nic) and, when enabled, the public IP (<name>-pip)."
   type        = string
 }
 
@@ -18,7 +18,7 @@ variable "resource_group_name" {
 }
 
 variable "subnet_id" {
-  description = "ID of the subnet for the private NIC."
+  description = "Subnet the private NIC joins. Take this from virtual-network's subnet_ids output. Azure subnets are regional, so this also fixes the region the VM can run in."
   type        = string
 }
 
@@ -64,7 +64,7 @@ variable "size" {
 }
 
 variable "custom_data" {
-  description = "Optional cloud-init text."
+  description = "Optional cloud-init text, passed as plain text. The module base64-encodes it, so encoding it yourself first produces a VM that boots and silently ignores the configuration. Changing this replaces the VM."
   type        = string
   default     = null
   sensitive   = true

@@ -36,12 +36,12 @@ Bastion, VPN, or another approved private management path.
 | Name | Description | Type | Default | Required |
 | ---- | ----------- | ---- | ------- | :------: |
 | <a name="input_location"></a> [location](#input\_location) | Azure region. | `string` | n/a | yes |
-| <a name="input_name"></a> [name](#input\_name) | VM name. | `string` | n/a | yes |
+| <a name="input_name"></a> [name](#input\_name) | Virtual machine name. Also names the NIC (<name>-nic) and, when enabled, the public IP (<name>-pip). | `string` | n/a | yes |
 | <a name="input_resource_group_name"></a> [resource\_group\_name](#input\_resource\_group\_name) | Existing resource group name. | `string` | n/a | yes |
 | <a name="input_ssh_public_key"></a> [ssh\_public\_key](#input\_ssh\_public\_key) | OpenSSH public key; private keys are never accepted. Pass the contents of a .pub file, e.g. file("~/.ssh/id\_ed25519.pub") — not the matching private key. There is no password login to fall back on, so a key you cannot use means a VM you cannot reach. | `string` | n/a | yes |
-| <a name="input_subnet_id"></a> [subnet\_id](#input\_subnet\_id) | ID of the subnet for the private NIC. | `string` | n/a | yes |
+| <a name="input_subnet_id"></a> [subnet\_id](#input\_subnet\_id) | Subnet the private NIC joins. Take this from virtual-network's subnet\_ids output. Azure subnets are regional, so this also fixes the region the VM can run in. | `string` | n/a | yes |
 | <a name="input_admin_username"></a> [admin\_username](#input\_admin\_username) | Local administrator username. Azure rejects a list of reserved names (root, admin, administrator and similar) at create time, so a typo here fails the apply rather than the boot. | `string` | `"azureuser"` | no |
-| <a name="input_custom_data"></a> [custom\_data](#input\_custom\_data) | Optional cloud-init text. | `string` | `null` | no |
+| <a name="input_custom_data"></a> [custom\_data](#input\_custom\_data) | Optional cloud-init text, passed as plain text. The module base64-encodes it, so encoding it yourself first produces a VM that boots and silently ignores the configuration. Changing this replaces the VM. | `string` | `null` | no |
 | <a name="input_public_ip_enabled"></a> [public\_ip\_enabled](#input\_public\_ip\_enabled) | Create and attach a Standard static public IPv4 address. This does not create an inbound NSG rule. Intended for explicit, short-lived tests. | `bool` | `false` | no |
 | <a name="input_size"></a> [size](#input\_size) | Azure VM SKU. Defaults to a general-purpose x86 size with broad regional capacity; override for cheaper burstable SKUs (e.g. Standard\_B1s/B2s) where your region and subscription have capacity. | `string` | `"Standard_D2s_v3"` | no |
 | <a name="input_tags"></a> [tags](#input\_tags) | Resource tags. | `map(string)` | `{}` | no |
@@ -50,10 +50,10 @@ Bastion, VPN, or another approved private management path.
 
 | Name | Description |
 | ---- | ----------- |
-| <a name="output_id"></a> [id](#output\_id) | VM resource ID. |
-| <a name="output_network_interface_id"></a> [network\_interface\_id](#output\_network\_interface\_id) | Network interface resource ID. |
-| <a name="output_principal_id"></a> [principal\_id](#output\_principal\_id) | System-assigned identity principal ID. |
-| <a name="output_private_ip_address"></a> [private\_ip\_address](#output\_private\_ip\_address) | Private NIC address. |
-| <a name="output_public_ip_address"></a> [public\_ip\_address](#output\_public\_ip\_address) | Allocated public IPv4 address when public\_ip\_enabled is true; otherwise null. |
+| <a name="output_network_interface_id"></a> [network\_interface\_id](#output\_network\_interface\_id) | Network interface resource ID, for attaching a load balancer backend pool or an application security group. |
+| <a name="output_principal_id"></a> [principal\_id](#output\_principal\_id) | System-assigned identity principal ID. Grant Azure roles to this so the VM can reach Key Vault, Storage, or a registry without a stored credential. |
+| <a name="output_private_ip_address"></a> [private\_ip\_address](#output\_private\_ip\_address) | Private address on the workload subnet. This is how to reach the VM from a bastion, a VPN, or a peered network. |
+| <a name="output_public_ip_address"></a> [public\_ip\_address](#output\_public\_ip\_address) | Allocated public IPv4 address when public\_ip\_enabled is true; otherwise null. Reaching it still needs an inbound NSG rule, which this module does not create. |
 | <a name="output_public_ip_id"></a> [public\_ip\_id](#output\_public\_ip\_id) | Public IP resource ID when public\_ip\_enabled is true; otherwise null. |
+| <a name="output_vm_id"></a> [vm\_id](#output\_vm\_id) | Virtual machine resource ID. |
 <!-- END_TF_DOCS -->

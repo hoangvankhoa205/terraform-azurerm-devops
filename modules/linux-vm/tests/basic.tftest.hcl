@@ -223,7 +223,7 @@ run "public_ip_outputs_are_null_when_not_opted_in" {
 
   assert {
     condition = (
-      output.id == azurerm_linux_virtual_machine.this.id &&
+      output.vm_id == azurerm_linux_virtual_machine.this.id &&
       output.network_interface_id == azurerm_network_interface.this.id &&
       output.private_ip_address == azurerm_network_interface.this.private_ip_address
     )
