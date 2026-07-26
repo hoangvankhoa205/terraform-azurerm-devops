@@ -30,9 +30,24 @@ The root module deliberately creates no resources. Pick a module from
 
 - Terraform `>= 1.9` or OpenTofu `>= 1.9`.
 - An Azure subscription, and the Azure CLI logged in (`az login`) or a service
-  principal configured through the usual `ARM_*` environment variables.
-- A resource group. No module creates one, so that a caller keeps control of
-  where resources land and what gets destroyed together.
+  principal configured through the usual `ARM_*` environment variables. For
+  keyless CI see
+  [`github-actions-federated-identity`](./modules/github-actions-federated-identity),
+  which covers the `ARM_USE_OIDC` setup `azure/login` does not do for you.
+- **A resource group.** No module creates one, so a caller keeps control of
+  where resources land and what gets destroyed together. Create it first, in
+  the shell or in your root configuration:
+
+  ```sh
+  az group create --name learn-rg --location "Southeast Asia"
+  ```
+
+  ```hcl
+  resource "azurerm_resource_group" "learn" {
+    name     = "learn-rg"
+    location = "Southeast Asia"
+  }
+  ```
 
 ## Getting started
 
@@ -41,6 +56,20 @@ package address `hoangvankhoa205/devops/azurerm`. Individual modules live under
 `//modules/<name>`.
 
 ```hcl
+module "network" {
+  source  = "hoangvankhoa205/devops/azurerm//modules/virtual-network"
+  version = "0.15.0"
+
+  name                = "learn-vnet"
+  location            = "Southeast Asia"
+  resource_group_name = "learn-rg"
+  address_space       = ["10.42.0.0/16"]
+
+  subnets = {
+    workload_private = { address_prefixes = ["10.42.1.0/24"] }
+  }
+}
+
 module "vm" {
   source  = "hoangvankhoa205/devops/azurerm//modules/linux-vm"
   version = "0.15.0"
@@ -48,7 +77,7 @@ module "vm" {
   name                = "learn-vm"
   location            = "Southeast Asia"
   resource_group_name = "learn-rg"
-  subnet_id           = azurerm_subnet.workload.id
+  subnet_id           = module.network.subnet_ids["workload_private"]
   ssh_public_key      = file("~/.ssh/id_ed25519.pub")
 }
 ```
@@ -72,6 +101,36 @@ provider "azurerm" {
 }
 ```
 
+Two modules need a provider beyond `azurerm`, and you must declare it yourself
+because modules cannot: [`endpoint-test`](./modules/endpoint-test) needs
+`hashicorp/http`, and the [`key-vault-secret`](./modules/key-vault-secret)
+example uses `hashicorp/random` to generate a password. Neither is pulled in for
+you.
+
+### Remote state
+
+[`state-storage`](./modules/state-storage) is the usual first apply. It is a
+bootstrap: apply it with local state, then move your state into it.
+
+```hcl
+terraform {
+  backend "azurerm" {
+    resource_group_name  = "learn-state-rg"
+    storage_account_name = "learnstate0001"
+    container_name       = "tfstate"
+    key                  = "workload.tfstate"
+
+    # Required. The module disables the shared account key, so without this
+    # every state operation fails with a 403 that looks like a missing role.
+    use_azuread_auth = true
+  }
+}
+```
+
+```sh
+terraform init -migrate-state
+```
+
 ## Composing modules
 
 Most modules are deliberately small and expect to be wired together. The common
@@ -89,6 +148,15 @@ paths:
 A worked example of the last chain, which is the one most people want first:
 
 ```hcl
+module "state" {
+  source  = "hoangvankhoa205/devops/azurerm//modules/state-storage"
+  version = "0.15.0"
+
+  name                = "learnstate0001"
+  location            = "Southeast Asia"
+  resource_group_name = "learn-state-rg"
+}
+
 # An identity GitHub Actions can assume with no stored secret.
 module "ci_identity" {
   source  = "hoangvankhoa205/devops/azurerm//modules/github-actions-federated-identity"
@@ -116,10 +184,16 @@ module "ci_rbac" {
 }
 ```
 
-In the workflow, `azure/login` then needs `client-id` from
-`module.ci_identity.client_id` and `tenant-id` from
-`module.ci_identity.tenant_id` — note those are two different GUIDs, and
-`principal_id` above is a third.
+Two things then catch people out on the first run, both covered in
+[`github-actions-federated-identity`](./modules/github-actions-federated-identity):
+the workflow job must declare `environment: dev` for the token to carry the
+subject above, and `azure/login` authenticates the Azure CLI but **not** the
+`azurerm` provider, which needs `ARM_USE_OIDC` set separately.
+
+Note also that `client_id`, `principal_id` and `tenant_id` are three different
+values: `azure/login` wants the client id, `github-actions-rbac` wants the
+principal id, and the tenant id identifies your Entra tenant rather than this
+identity.
 
 ## Safety boundary
 
@@ -190,7 +264,8 @@ for m in modules/*/; do terraform-docs -c .terraform-docs.yml "$m"; done
   AzureRM alone
 
 Modules configure no providers or backends. Configure those only in a root
-module.
+module — including `hashicorp/http` if you use `endpoint-test`, and
+`hashicorp/random` if you follow the `key-vault-secret` example.
 
 ## Versioning
 

@@ -17,6 +17,8 @@ module "ci_rbac" {
   principal_id = module.ci_identity.principal_id
 
   # Map keys are labels for your own benefit; they name nothing in Azure.
+  # module.state is a state-storage instance; azurerm_resource_group.workload
+  # is a resource group you declare — both are scopes, not module inputs.
   assignments = {
     state = {
       scope                = module.state.storage_account_id
@@ -44,6 +46,14 @@ one does not grant the other.
 
 Getting this wrong produces a 403 at apply time from the data plane, long after
 the role assignment itself succeeded.
+
+### A 403 reading state is not always a missing role
+
+[`state-storage`](../state-storage) disables shared-key auth, so the `azurerm`
+backend must be told to authenticate with Entra. If `use_azuread_auth = true`
+(and `use_oidc = true` in CI) is missing from the backend block, state reads
+fail with a 403 **even when the role is assigned and fully propagated**. Check
+the backend block before re-checking the role assignment.
 
 ## Propagation is eventually consistent
 

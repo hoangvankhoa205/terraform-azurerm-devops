@@ -21,6 +21,14 @@ module "ci_identity" {
   # ref, or pull_request — wildcards are rejected.
   subject = "repo:your-org/your-repo:environment:dev"
 }
+
+output "ci_client_id" {
+  value = module.ci_identity.client_id
+}
+
+output "ci_tenant_id" {
+  value = module.ci_identity.tenant_id
+}
 ```
 
 Accepted subject forms:
@@ -32,26 +40,73 @@ Accepted subject forms:
 | Tag | `repo:your-org/your-repo:ref:refs/tags/v1.0.0` |
 | Pull request | `repo:your-org/your-repo:pull_request` |
 
-In the workflow, the identity needs `id-token: write` and three values — note
-that `client_id` and `principal_id` are **different GUIDs** for the same
-identity, and `azure/login` wants the client one:
+### Getting the outputs into GitHub
+
+Nothing wires these across for you. Read them out and set them as repository
+variables — they are identifiers, not secrets, so `vars` is the right home:
+
+```sh
+gh variable set AZURE_CLIENT_ID       --body "$(terraform output -raw ci_client_id)"
+gh variable set AZURE_TENANT_ID       --body "$(terraform output -raw ci_tenant_id)"
+gh variable set AZURE_SUBSCRIPTION_ID --body "$(az account show --query id -o tsv)"
+```
+
+`AZURE_SUBSCRIPTION_ID` comes from your subscription, not from this module —
+`azure/login` needs it to pick a subscription, and no module here outputs one.
+
+### The workflow
+
+Two things in this snippet are easy to miss, and each produces a confusing
+failure on the first run.
 
 ```yaml
 permissions:
-  id-token: write
+  id-token: write # without this, no OIDC token is minted at all
   contents: read
 
-steps:
-  - uses: azure/login@v2
-    with:
-      client-id: ${{ vars.AZURE_CLIENT_ID }}       # module.ci_identity.client_id
-      tenant-id: ${{ vars.AZURE_TENANT_ID }}       # module.ci_identity.tenant_id
-      subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    # REQUIRED when the subject is `...:environment:dev`. GitHub only puts
+    # `environment:dev` in the token when the job declares the environment.
+    # Omit it and the token says `ref:refs/heads/main`, Entra sees a subject it
+    # does not trust, and login fails with AADSTS70021 — which reads like a
+    # broken credential rather than a mismatched string.
+    environment: dev
+
+    steps:
+      - uses: azure/login@v2
+        with:
+          client-id: ${{ vars.AZURE_CLIENT_ID }}       # module.ci_identity.client_id
+          tenant-id: ${{ vars.AZURE_TENANT_ID }}       # module.ci_identity.tenant_id
+          subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+
+      # azure/login authenticates the az CLI. It does NOT authenticate the
+      # azurerm provider, which reads its own environment. Without these,
+      # terraform fails to authenticate in a job where `az account show` works.
+      - run: terraform apply -auto-approve
+        env:
+          ARM_USE_OIDC: true
+          ARM_CLIENT_ID: ${{ vars.AZURE_CLIENT_ID }}
+          ARM_TENANT_ID: ${{ vars.AZURE_TENANT_ID }}
+          ARM_SUBSCRIPTION_ID: ${{ vars.AZURE_SUBSCRIPTION_ID }}
 ```
+
+If you would rather not repeat those four, set `use_oidc = true` in the
+`provider "azurerm"` block instead.
+
+### The identity starts with no permissions
 
 `principal_id` is what [`github-actions-rbac`](../github-actions-rbac) grants
 roles to. This module grants none, so until you pair the two, a successful
 `azure/login` can still do nothing at all.
+
+### Bootstrapping
+
+Something has to create this identity before CI exists, so the first apply is
+from a workstation with `az login`. After that the pipeline can manage
+everything else, including itself.
 
 <!-- BEGIN_TF_DOCS -->
 ## Requirements

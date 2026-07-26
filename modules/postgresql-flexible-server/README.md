@@ -54,7 +54,12 @@ module "database" {
   delegated_subnet_id = module.network.subnet_ids["data_private"]
   private_dns_zone_id = azurerm_private_dns_zone.pg.id
 
-  # Read this from a secret store, not a .tfvars file.
+  # Read this from a secret store, not a .tfvars file. `pg_admin` here is a
+  # data source you declare against an existing vault:
+  #   data "azurerm_key_vault_secret" "pg_admin" {
+  #     name         = "pg-admin-password"
+  #     key_vault_id = module.vault.key_vault_id
+  #   }
   administrator_password = data.azurerm_key_vault_secret.pg_admin.value
 
   depends_on = [azurerm_private_dns_zone_virtual_network_link.pg]

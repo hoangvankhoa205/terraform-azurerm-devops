@@ -27,7 +27,8 @@ module "vault" {
 }
 
 # The vault authorises through Entra RBAC, so grant yourself a data-plane role
-# before trying to read or write anything in it.
+# before trying to read or write anything in it. The roles are per object type:
+# this one covers secrets and NOT keys or certificates.
 resource "azurerm_role_assignment" "admin" {
   scope                = module.vault.key_vault_id
   role_definition_name = "Key Vault Secrets Officer"
@@ -35,7 +36,16 @@ resource "azurerm_role_assignment" "admin" {
 }
 ```
 
-## Which of the three vault modules to use
+Pick the role for the objects you actually manage — holding one grants nothing
+for the others, and adding a module later usually means adding a role too:
+
+| Managing | Role |
+| --- | --- |
+| Secrets ([`key-vault-secret`](../key-vault-secret)) | `Key Vault Secrets Officer` |
+| Keys ([`key-vault-key`](../key-vault-key)) | `Key Vault Crypto Officer` |
+| Certificates ([`key-vault-certificate`](../key-vault-certificate)) | `Key Vault Certificates Officer` |
+
+## Which of the four vault modules to use
 
 The difference is not RBAC, and it is not an Azure restriction — a single
 Azure vault has always held keys, secrets and certificates side by side. The
@@ -46,6 +56,11 @@ modules differ only in which Terraform resources they create:
 | `key-vault` | `azurerm_key_vault` | no |
 | [`key-vault-key`](../key-vault-key) | `azurerm_key_vault` **and** `azurerm_key_vault_key` | no |
 | [`key-vault-secret`](../key-vault-secret) | `azurerm_key_vault_secret` per entry | **yes** — takes `key_vault_id` |
+| [`key-vault-certificate`](../key-vault-certificate) | `azurerm_key_vault_certificate` | **yes** — takes `key_vault_id` |
+
+Either vault-creating module satisfies the two that need one: a vault from
+`key-vault-key` holds secrets and certificates just as happily as one from
+`key-vault`.
 
 So the only combination that fails is two modules that each create a vault:
 
@@ -112,6 +127,32 @@ purging a key that encrypts live data makes that data unrecoverable, and
 several Azure services refuse a CMK from a vault without it. A vault holding
 only secrets has no such requirement, so `false` is defensible there when the
 name needs to be reusable.
+
+### Turning it off is not enough on its own
+
+Soft delete is **always** on and cannot be disabled. Setting
+`purge_protection_enabled = false` only makes an early purge *possible* —
+something still has to perform it, or the name stays reserved anyway. Either
+let the provider do it:
+
+```hcl
+provider "azurerm" {
+  features {
+    key_vault {
+      purge_soft_delete_on_destroy    = true
+      recover_soft_deleted_key_vaults = false
+    }
+  }
+}
+```
+
+or purge by hand with `az keyvault purge --name <name> --location <region>`.
+
+Both need the `Microsoft.KeyVault/locations/deletedVaults/purge/action`
+permission, which `Contributor` does **not** include. Without it the destroy
+succeeds, the purge silently does not, and the next apply fails on a name that
+looks free but is not. `az keyvault list-deleted` shows what is still holding a
+name.
 
 <!-- BEGIN_TF_DOCS -->
 ## Requirements

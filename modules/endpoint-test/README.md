@@ -37,12 +37,24 @@ module "site_up" {
   source  = "hoangvankhoa205/devops/azurerm//modules/endpoint-test"
   version = "0.15.0"
 
-  url = module.static_site.primary_web_endpoint
+  # Test what a visitor actually loads. Where a CDN sits in front, that is the
+  # CDN's hostname, not the origin's — the origin is often firewalled off from
+  # wherever Terraform runs, so testing it directly fails on a healthy site.
+  url = "https://${module.cdn.endpoint_host_name}"
 }
 ```
 
 Pair it with the module whose output it verifies — referencing that output is
 also what orders the request after the thing exists.
+
+Testing a storage origin directly is still reasonable when there is no CDN:
+
+```hcl
+  url = module.site.primary_web_endpoint
+```
+
+but note that it only works if `public_network_access_enabled = true` and the
+firewall admits the machine running Terraform.
 
 <!-- BEGIN_TF_DOCS -->
 ## Requirements

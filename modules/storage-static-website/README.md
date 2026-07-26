@@ -13,9 +13,8 @@ network_rules = {
 
 Static website content is anonymous to clients that pass the network boundary;
 blob container public ACLs remain disabled. Upload content through an
-Entra-authenticated deployment step. A global Front Door composition should use
-the production storage/edge modules with Private Link rather than broad origin
-firewall exceptions. This module manages infrastructure, not website files.
+Entra-authenticated deployment step. This module manages infrastructure, not
+website files.
 
 ## Usage
 
@@ -32,6 +31,10 @@ module "site" {
   # so client-side routing works.
   index_document     = "index.html"
   error_404_document = "404.html"
+
+  # Required for anyone — including Front Door — to reach the site. The default
+  # is false, which builds a website nothing can load.
+  public_network_access_enabled = true
 }
 ```
 
@@ -60,7 +63,7 @@ and Terraform derives the ordering on its own:
 ```hcl
 resource "azurerm_storage_blob" "index" {
   name                 = "index.html"
-  storage_container_id = module.static_site.web_container_id
+  storage_container_id = module.site.web_container_id
   type                 = "Block"
   content_type         = "text/html"
   source               = "site/index.html"

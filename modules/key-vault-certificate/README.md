@@ -6,6 +6,10 @@ vault, so one vault can hold certificates alongside keys and secrets.
 
 ## Usage
 
+`module.vault` below is a [`key-vault`](../key-vault) (or
+[`key-vault-key`](../key-vault-key)) instance declared alongside this one; see
+that module's README for its own arguments.
+
 ```hcl
 module "tls" {
   source  = "hoangvankhoa205/devops/azurerm//modules/key-vault-certificate"
@@ -94,7 +98,34 @@ not through your credentials, so that identity needs its own role — reading th
 backing secret requires **Key Vault Secrets User** in addition to any
 certificate role.
 
-Assign in the root and allow for propagation delay before use.
+Assign in the root and allow for propagation delay before use. Propagation is
+minutes, not seconds, so a single apply that creates the role and immediately
+uses it will fail intermittently. Order it explicitly:
+
+```hcl
+resource "time_sleep" "rbac" {
+  depends_on      = [azurerm_role_assignment.certs]
+  create_duration = "60s"
+}
+
+module "tls" {
+  # ...
+  depends_on = [time_sleep.rbac]
+}
+```
+
+## The role is only one of two barriers
+
+A role grants permission; it does not grant reachability.
+[`key-vault`](../key-vault) creates the vault with public network access
+disabled and its ACL set to `Deny`, so an Application Gateway with every correct
+role still cannot fetch the certificate until it is allowed through the network
+boundary — via a Private Endpoint, a service endpoint on its subnet, or an IP
+exception.
+
+The two failures look nothing alike: a missing role gives a 403, a blocked
+network gives a timeout or a connection failure. Check which one you have before
+adding more roles.
 
 ## HSM key types need a premium vault
 

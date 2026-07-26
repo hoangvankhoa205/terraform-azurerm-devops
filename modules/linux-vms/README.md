@@ -5,6 +5,9 @@ system-assigned managed identity. No public IPs at all.
 
 ## Usage
 
+`module.network` below is a [`virtual-network`](../virtual-network) instance
+declared alongside this one; it supplies the `subnet_ids` map.
+
 ```hcl
 module "vms" {
   source  = "hoangvankhoa205/devops/azurerm//modules/linux-vms"

@@ -85,6 +85,29 @@ The origin group's numbers look arbitrary but are not: a `HEAD` probe against
 fails on its own, and requiring 3 of the last 4 samples stops a single slow
 response taking the site offline while still recovering within a few intervals.
 
+## The origin's firewall has to let Front Door in
+
+This is the failure that looks like propagation but never resolves. Front Door
+reaches the storage account **over the public Internet from Microsoft's edge**,
+not over the Azure backbone, so a storage account with
+`public_network_access_enabled = false` returns errors to Front Door forever.
+
+`network_rules.bypass = ["AzureServices"]`, the storage module's default, does
+**not** cover Front Door. There are two workable arrangements:
+
+| Arrangement | What to do | Trade-off |
+| --- | --- | --- |
+| Public origin (what the example above does) | `public_network_access_enabled = true` on the storage module | The origin is reachable directly, bypassing Front Door |
+| Private origin | Front Door **Premium** plus a Private Link origin connection | Keeps the origin off the Internet; needs Premium and a manual approval |
+
+This module creates no Private Link connection, so the public-origin
+arrangement is the one it supports out of the box. Locking the origin down
+properly is a Premium exercise left to the caller.
+
+Symptom check: if the Front Door hostname returns errors but
+`https://<primary_web_endpoint>` also fails from your machine, the problem is
+the origin firewall, not Front Door.
+
 ## Propagation is slow, and the site is not instantly live
 
 A Front Door apply typically takes several minutes, and the endpoint keeps

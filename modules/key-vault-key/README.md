@@ -1,6 +1,6 @@
 # Key Vault key
 
-Creates an RBAC-enabled Key Vault with purge protection and one RSA key. Public
+Creates an RBAC-authorized Key Vault with purge protection and one RSA key. Public
 network access is disabled by default.
 
 The key is the point here: this is the shortest path to a customer-managed key.

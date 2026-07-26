@@ -7,14 +7,24 @@ certificates together.
 
 ## Usage
 
+This example needs `hashicorp/random` in your root's `required_providers`
+alongside `azurerm` — modules cannot declare providers for you.
+
 ```hcl
+data "azurerm_client_config" "current" {}
+
+resource "random_password" "db" {
+  length  = 32
+  special = true
+}
+
 module "vault" {
   source  = "hoangvankhoa205/devops/azurerm//modules/key-vault"
   version = "0.15.0"
 
   name                = "learn-kv-0001"
   location            = "Southeast Asia"
-  resource_group_name = azurerm_resource_group.this.name
+  resource_group_name = "learn-rg"
   tenant_id           = data.azurerm_client_config.current.tenant_id
 }
 
