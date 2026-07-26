@@ -5,8 +5,8 @@ Reusable AzureRM implementations of the infrastructure concepts demonstrated by
 This is an independent community module collection: it is not an official
 Azure Verified Module and is not affiliated with the original project.
 
-> **Status:** early work in progress. The collection currently ships fourteen
-> modules, [`linux-vm`](./modules/linux-vm),
+> **Status:** early work in progress. The collection currently ships sixteen
+> modules: [`linux-vm`](./modules/linux-vm),
 > [`linux-vms`](./modules/linux-vms),
 > [`vm-scale-set`](./modules/vm-scale-set),
 > [`state-storage`](./modules/state-storage),
@@ -15,11 +15,13 @@ Azure Verified Module and is not affiliated with the original project.
 > [`postgresql-flexible-server`](./modules/postgresql-flexible-server),
 > [`container-registry`](./modules/container-registry),
 > [`storage-static-website`](./modules/storage-static-website),
-> [`endpoint-test`](./modules/endpoint-test), and
+> [`endpoint-test`](./modules/endpoint-test),
 > [`key-vault-key`](./modules/key-vault-key),
 > [`key-vault`](./modules/key-vault),
-> [`key-vault-secret`](./modules/key-vault-secret), and
-> [`key-vault-certificate`](./modules/key-vault-certificate). More
+> [`key-vault-secret`](./modules/key-vault-secret),
+> [`key-vault-certificate`](./modules/key-vault-certificate),
+> [`github-actions-federated-identity`](./modules/github-actions-federated-identity),
+> and [`github-actions-rbac`](./modules/github-actions-rbac). More
 > Azure modules will be added over time — see [Roadmap](#roadmap).
 
 The root module deliberately creates no resources. Pick a module from
@@ -31,7 +33,7 @@ Terraform Registry package address `hoangvankhoa205/devops/azurerm`.
 ```hcl
 module "vm" {
   source  = "hoangvankhoa205/devops/azurerm//modules/linux-vm"
-  version = "0.14.0"
+  version = "0.15.0"
 
   name                = "learn-vm"
   location            = "Southeast Asia"
@@ -67,6 +69,8 @@ production landing zone.
 | [`key-vault`](./modules/key-vault) | An RBAC-authorized Key Vault and nothing else — keys, secrets and certificates are the caller's. Use it when the vault holds no key, or when you want the key managed explicitly in your root. It cannot be combined with `key-vault-key`, since both create a vault. |
 | [`key-vault-secret`](./modules/key-vault-secret) | Secrets in an existing vault, one per entry in a map. Takes a `key_vault_id` and creates no vault. Names and values are separate variables because `for_each` rejects sensitive values. |
 | [`key-vault-certificate`](./modules/key-vault-certificate) | A certificate Key Vault issues, in an existing vault. Self-signed by default. Exposes the certificate's backing SECRET id — the thing an Application Gateway listener consumes, not the certificate id. Importing an existing PFX is out of scope. |
+| [`github-actions-federated-identity`](./modules/github-actions-federated-identity) | A user-assigned managed identity trusting one exact GitHub OIDC subject, so Actions authenticates to Azure with no stored client secret. Grants no Azure role — pair it with `github-actions-rbac`. Wildcard and repo-only subjects are rejected. |
+| [`github-actions-rbac`](./modules/github-actions-rbac) | Named Azure roles at explicit scopes for an existing managed identity, one assignment per entry in a map. Rejects `Owner` and an empty map. Creates no identity; takes a `principal_id`. RBAC propagation is eventually consistent. |
 
 ## Roadmap
 
@@ -74,7 +78,6 @@ Planned modules (not yet implemented). This list is aspirational and will
 change:
 
 - `aks-cluster`
-- `github-actions-federated-identity`
 
 ## Compatibility
 
