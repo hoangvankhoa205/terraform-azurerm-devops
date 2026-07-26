@@ -1,11 +1,121 @@
-# PostgreSQL Flexible Server
+# postgresql-flexible-server
 
-Creates a private, delegated-subnet PostgreSQL Flexible Server with PITR
-backups. The caller supplies a password from a secret store; it is never
-output. HA is optional because the default SKU is intentionally inexpensive.
-An HA standby is not a readable replica. Production should add Entra auth,
-diagnostics, locks, customer requirements for geo-backup, and restore testing.
+A PostgreSQL Flexible Server injected into a delegated subnet, reachable only
+from inside the virtual network.
 
+## Usage
+
+The subnet must be delegated to the service, and a private DNS zone must exist
+and be linked to the VNet. Both are inputs rather than resources here, because
+both are usually shared:
+
+```hcl
+module "network" {
+  source  = "hoangvankhoa205/devops/azurerm//modules/virtual-network"
+  version = "0.15.0"
+
+  name                = "learn-vnet"
+  location            = "Southeast Asia"
+  resource_group_name = "learn-rg"
+  address_space       = ["10.42.0.0/16"]
+
+  subnets = {
+    data_private = {
+      address_prefixes = ["10.42.2.0/24"]
+      delegation = {
+        service_name = "Microsoft.DBforPostgreSQL/flexibleServers"
+        actions      = ["Microsoft.Network/virtualNetworks/subnets/join/action"]
+      }
+    }
+  }
+}
+
+# The zone name MUST end .postgres.database.azure.com.
+resource "azurerm_private_dns_zone" "pg" {
+  name                = "learn.postgres.database.azure.com"
+  resource_group_name = "learn-rg"
+}
+
+resource "azurerm_private_dns_zone_virtual_network_link" "pg" {
+  name                  = "learn-pg-link"
+  resource_group_name   = "learn-rg"
+  private_dns_zone_name = azurerm_private_dns_zone.pg.name
+  virtual_network_id    = module.network.vnet_id
+}
+
+module "database" {
+  source  = "hoangvankhoa205/devops/azurerm//modules/postgresql-flexible-server"
+  version = "0.15.0"
+
+  name                = "learn-postgres-001"
+  location            = "Southeast Asia"
+  resource_group_name = "learn-rg"
+
+  delegated_subnet_id = module.network.subnet_ids["data_private"]
+  private_dns_zone_id = azurerm_private_dns_zone.pg.id
+
+  # Read this from a secret store, not a .tfvars file.
+  administrator_password = data.azurerm_key_vault_secret.pg_admin.value
+
+  depends_on = [azurerm_private_dns_zone_virtual_network_link.pg]
+}
+```
+
+## Three things that fail the apply, in order of how often
+
+1. **The SKU is not a bare VM size.** It carries a tier prefix:
+   `B_Standard_B1ms`, `GP_Standard_D2s_v3`, `MO_Standard_E2s_v3`. Passing
+   `Standard_D2s_v3` is rejected.
+2. **The DNS zone name must end `.postgres.database.azure.com`.** Any other
+   suffix is refused, and the message does not make the reason obvious.
+3. **The subnet delegation is mandatory and exclusive.** A subnet delegated to
+   Flexible Server can host nothing else, so give the database its own.
+
+The zone also has to be *linked* to the VNet. Without the link the server
+creates successfully and then nothing can resolve its name.
+
+## The password is yours to protect
+
+`administrator_password` is marked sensitive, so it stays out of plan output and
+the console, and this module never returns it in an output — a property pinned
+by a test.
+
+That does not keep it out of **Terraform state**, where it is stored in
+cleartext. Key Vault does not change that. Protect the state file (see
+[`state-storage`](../state-storage)), or read the password from a data source at
+apply time so the value at least never sits in a `.tfvars` file in your repo.
+
+## High availability is not a read replica
+
+`high_availability` is off by default and roughly doubles the compute bill when
+enabled.
+
+- `SameZone` protects against node failure within one zone.
+- `ZoneRedundant` also survives losing a zone, and needs a region that has them.
+  Set `zone` explicitly so the standby lands somewhere different.
+
+In both modes the standby serves **no queries**. It exists to fail over. If you
+want to offload reads, you want a read replica, which this module does not
+create.
+
+## Settings that are fixed rather than exposed
+
+- `public_network_access_enabled` is always `false`. A VNet-integrated Flexible
+  Server cannot serve a public endpoint at all, so a knob would only let you
+  write a configuration Azure rejects.
+- `geo_redundant_backup_enabled` is always `false`. It cannot be changed after
+  creation, so exposing it would invite an edit that silently replaces the
+  server and takes the data with it.
+- Entra authentication is off. Enabling it needs an administrator principal this
+  module does not accept.
+
+## What this module leaves out
+
+- **Databases, roles, extensions, and firewall rules.** The server is empty.
+- **The private DNS zone and its VNet link.**
+- **Read replicas.**
+- **Connection pooling (PgBouncer) and server parameters.**
+- **Monitoring, alerting, and log routing.**
 
 <!-- BEGIN_TF_DOCS -->
 ## Requirements

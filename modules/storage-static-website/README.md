@@ -17,6 +17,40 @@ Entra-authenticated deployment step. A global Front Door composition should use
 the production storage/edge modules with Private Link rather than broad origin
 firewall exceptions. This module manages infrastructure, not website files.
 
+## Usage
+
+```hcl
+module "site" {
+  source  = "hoangvankhoa205/devops/azurerm//modules/storage-static-website"
+  version = "0.15.0"
+
+  name                = "learnstaticweb001" # lowercase alphanumeric, globally unique
+  location            = "Southeast Asia"
+  resource_group_name = "learn-rg"
+
+  # A single-page app usually wants the 404 document pointed back at index.html
+  # so client-side routing works.
+  index_document     = "index.html"
+  error_404_document = "404.html"
+}
+```
+
+Serve it through a CDN with a real HTTPS endpoint by passing `primary_web_host`
+— the bare hostname, not `primary_web_endpoint` — to
+[`front-door-static-website`](../front-door-static-website):
+
+```hcl
+module "cdn" {
+  source  = "hoangvankhoa205/devops/azurerm//modules/front-door-static-website"
+  version = "0.15.0"
+
+  name                = "learn-frontdoor"
+  endpoint_name       = "learn-static-endpoint-001"
+  resource_group_name = "learn-rg"
+  origin_host_name    = module.site.primary_web_host
+}
+```
+
 ## Uploading content
 
 Enabling static website hosting is what creates the implicit `$web` container,

@@ -11,6 +11,30 @@ workload needs, instead of each object type dragging its own vault along.
 Pair it with [`key-vault-secret`](../key-vault-secret), or manage
 `azurerm_key_vault_key` / `_secret` / `_certificate` directly in your root.
 
+## Usage
+
+```hcl
+data "azurerm_client_config" "current" {}
+
+module "vault" {
+  source  = "hoangvankhoa205/devops/azurerm//modules/key-vault"
+  version = "0.15.0"
+
+  name                = "learn-key-vault-001" # 3-24 chars, globally unique
+  location            = "Southeast Asia"
+  resource_group_name = "learn-rg"
+  tenant_id           = data.azurerm_client_config.current.tenant_id
+}
+
+# The vault authorises through Entra RBAC, so grant yourself a data-plane role
+# before trying to read or write anything in it.
+resource "azurerm_role_assignment" "admin" {
+  scope                = module.vault.key_vault_id
+  role_definition_name = "Key Vault Secrets Officer"
+  principal_id         = data.azurerm_client_config.current.object_id
+}
+```
+
 ## Which of the three vault modules to use
 
 The difference is not RBAC, and it is not an Azure restriction — a single

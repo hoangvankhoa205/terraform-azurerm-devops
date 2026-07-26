@@ -6,6 +6,53 @@ separate identity and GitHub Environment subject for each plan/apply boundary;
 combine it with `github-actions-rbac` using narrow scopes.
 
 
+## Usage
+
+```hcl
+module "ci_identity" {
+  source  = "hoangvankhoa205/devops/azurerm//modules/github-actions-federated-identity"
+  version = "0.15.0"
+
+  name                = "learn-gh-dev"
+  location            = "Southeast Asia"
+  resource_group_name = "learn-identity-rg"
+
+  # Matched literally against the token GitHub presents. One environment, one
+  # ref, or pull_request — wildcards are rejected.
+  subject = "repo:your-org/your-repo:environment:dev"
+}
+```
+
+Accepted subject forms:
+
+| Form | Example |
+| --- | --- |
+| Environment | `repo:your-org/your-repo:environment:dev` |
+| Branch | `repo:your-org/your-repo:ref:refs/heads/main` |
+| Tag | `repo:your-org/your-repo:ref:refs/tags/v1.0.0` |
+| Pull request | `repo:your-org/your-repo:pull_request` |
+
+In the workflow, the identity needs `id-token: write` and three values — note
+that `client_id` and `principal_id` are **different GUIDs** for the same
+identity, and `azure/login` wants the client one:
+
+```yaml
+permissions:
+  id-token: write
+  contents: read
+
+steps:
+  - uses: azure/login@v2
+    with:
+      client-id: ${{ vars.AZURE_CLIENT_ID }}       # module.ci_identity.client_id
+      tenant-id: ${{ vars.AZURE_TENANT_ID }}       # module.ci_identity.tenant_id
+      subscription-id: ${{ vars.AZURE_SUBSCRIPTION_ID }}
+```
+
+`principal_id` is what [`github-actions-rbac`](../github-actions-rbac) grants
+roles to. This module grants none, so until you pair the two, a successful
+`azure/login` can still do nothing at all.
+
 <!-- BEGIN_TF_DOCS -->
 ## Requirements
 

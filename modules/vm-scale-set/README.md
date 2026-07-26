@@ -1,10 +1,86 @@
-# VM Scale Set
+# vm-scale-set
 
-Creates a small private Linux VM Scale Set with SSH-key authentication and no
-public instance IPs. This learning module uses manual upgrades; production
-modules should add health probes, automatic repair, rolling upgrades, and
-autoscale rules.
+A private Linux VM Scale Set with SSH-key-only authentication and a
+system-assigned managed identity shared by every instance.
 
+## Usage
+
+```hcl
+module "workers" {
+  source  = "hoangvankhoa205/devops/azurerm//modules/vm-scale-set"
+  version = "0.15.0"
+
+  name                = "learn-vmss"
+  location            = "Southeast Asia"
+  resource_group_name = "learn-rg"
+  subnet_id           = module.network.subnet_ids["workload_private"]
+  ssh_public_key      = file("~/.ssh/id_ed25519.pub")
+
+  instances = 3
+  sku       = "Standard_B2s"
+  zones     = ["1", "2", "3"]
+}
+```
+
+## Choosing between this and linux-vms
+
+Both give you several Linux machines. They differ in whether the machines are
+individuals:
+
+| | `vm-scale-set` | [`linux-vms`](../linux-vms) |
+| --- | --- | --- |
+| Machines are | interchangeable copies | named individuals |
+| Count comes from | one number | the size of a map |
+| Per-machine subnet, size, cloud-init | no | yes |
+| Addressed as | one resource | a map keyed by your names |
+| Suits | stateless workers behind a load balancer | a control node, a build agent, a database host |
+
+If you find yourself wanting instance number 2 to be different, you want
+`linux-vms`.
+
+## Manual upgrade mode, and what that costs you
+
+`upgrade_mode` is fixed to `Manual`. Changing the image or `custom_data` updates
+the scale set *model*, but running instances keep the old configuration until
+somebody rolls them.
+
+That is the safe default here because the alternatives need things this module
+does not create: `Automatic` reimages every instance the moment a plan applies,
+with no health signal to stop a bad rollout, and `Rolling` requires a health
+probe attached to a load balancer.
+
+The practical consequence: after changing `custom_data`, the plan is clean and
+nothing happens. Roll the instances yourself with
+`az vmss update-instances --instance-ids '*'`, or destroy and recreate.
+
+## Scaling out needs addresses
+
+`instances` is a fixed number — this module ships no autoscale rules, so the
+count only changes when you change it. Whatever ceiling you expect to reach,
+the subnet must have room for that many addresses. A scale set that cannot
+allocate one fails to scale out, and the error surfaces in Azure's activity log
+rather than in Terraform.
+
+## Zones are optional because not every region has them
+
+`zones` defaults to empty, which is correct in regions with no availability
+zones. Passing a zone list that a region does not recognise fails the apply, so
+check the region before setting it.
+
+## Reaching an instance
+
+Instances get private addresses only — there is no `public_ip_address` block
+configured, and no per-instance public IPs. Access needs a bastion, a VPN, or a
+peered network. Password authentication is disabled, so the SSH key is the only
+credential; a key you cannot use means instances you cannot reach.
+
+## What this module leaves out
+
+- **Autoscale rules.** The instance count is whatever you set.
+- **Load balancer or Application Gateway**, and therefore any health probe.
+- **Automatic instance repair**, which needs that probe.
+- **Rolling upgrade policy.**
+- **Data disks.** Instances get an OS disk only.
 
 <!-- BEGIN_TF_DOCS -->
 ## Requirements

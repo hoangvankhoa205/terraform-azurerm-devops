@@ -35,7 +35,7 @@ starts failing every plan, including plans for unrelated changes.
 ```hcl
 module "site_up" {
   source  = "hoangvankhoa205/devops/azurerm//modules/endpoint-test"
-  version = "0.12.0"
+  version = "0.15.0"
 
   url = module.static_site.primary_web_endpoint
 }

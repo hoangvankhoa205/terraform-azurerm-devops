@@ -5,10 +5,12 @@ create a vault — pass the `key_vault_id` output of
 [`key-vault`](../key-vault), so a single vault can hold secrets, keys and
 certificates together.
 
+## Usage
+
 ```hcl
 module "vault" {
   source  = "hoangvankhoa205/devops/azurerm//modules/key-vault"
-  version = "0.14.0"
+  version = "0.15.0"
 
   name                = "learn-kv-0001"
   location            = "Southeast Asia"
@@ -18,7 +20,7 @@ module "vault" {
 
 module "secrets" {
   source  = "hoangvankhoa205/devops/azurerm//modules/key-vault-secret"
-  version = "0.14.0"
+  version = "0.15.0"
 
   key_vault_id = module.vault.key_vault_id
 

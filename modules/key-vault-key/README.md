@@ -58,6 +58,30 @@ key — purging a key that encrypts live data makes that data unrecoverable, and
 several Azure services refuse a CMK from a vault without purge protection. Set
 it `false` only for throwaway vaults you expect to recreate under the same name.
 
+## Usage
+
+```hcl
+data "azurerm_client_config" "current" {}
+
+module "cmk" {
+  source  = "hoangvankhoa205/devops/azurerm//modules/key-vault-key"
+  version = "0.15.0"
+
+  name                = "learn-key-vault-001"
+  location            = "Southeast Asia"
+  resource_group_name = "learn-rg"
+  tenant_id           = data.azurerm_client_config.current.tenant_id
+
+  key_name = "storage-cmk"
+}
+
+# Bind consumers to the VERSIONLESS id so they follow rotation. A consumer
+# pinned to key_id keeps using the version that existed at apply time.
+output "cmk_id" {
+  value = module.cmk.key_versionless_id
+}
+```
+
 <!-- BEGIN_TF_DOCS -->
 ## Requirements
 

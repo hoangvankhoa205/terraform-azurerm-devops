@@ -4,10 +4,12 @@ A certificate that **Key Vault issues**, in an existing vault. Pass the
 `key_vault_id` output of [`key-vault`](../key-vault); this module creates no
 vault, so one vault can hold certificates alongside keys and secrets.
 
+## Usage
+
 ```hcl
 module "tls" {
   source  = "hoangvankhoa205/devops/azurerm//modules/key-vault-certificate"
-  version = "0.14.0"
+  version = "0.15.0"
 
   key_vault_id = module.vault.key_vault_id
   name         = "app-tls"

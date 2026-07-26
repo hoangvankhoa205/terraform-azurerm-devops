@@ -1,13 +1,110 @@
-# Linux VM
+# linux-vm
 
-Creates one Ubuntu VM with SSH-key-only authentication and a system-assigned
-managed identity. The default is a private-only NIC. Set
-`public_ip_enabled = true` only for an explicit, short-lived test; doing so
-creates a Standard static IPv4 address but does not open an NSG rule.
+One Ubuntu 22.04 VM with SSH-key-only authentication and a system-assigned
+managed identity. Private by default.
 
-Production callers should keep the private default and reach the VM through
-Bastion, VPN, or another approved private management path.
+## Usage
 
+```hcl
+module "vm" {
+  source  = "hoangvankhoa205/devops/azurerm//modules/linux-vm"
+  version = "0.15.0"
+
+  name                = "learn-vm"
+  location            = "Southeast Asia"
+  resource_group_name = "learn-rg"
+  subnet_id           = module.network.subnet_ids["workload_private"]
+  ssh_public_key      = file("~/.ssh/id_ed25519.pub")
+}
+```
+
+With cloud-init, passed as **plain text** — the module base64-encodes it:
+
+```hcl
+  custom_data = <<-EOT
+    #cloud-config
+    packages:
+      - nginx
+  EOT
+```
+
+Encoding it yourself first produces a VM that boots normally and silently
+ignores the configuration, which is unpleasant to diagnose after the fact.
+
+## There is no password login
+
+`disable_password_authentication` is hard-coded true, so the SSH key is the only
+credential. A key you cannot use is a VM you cannot reach — and since the NIC is
+private, there is no console fallback beyond the Azure serial console.
+
+The key is installed for `admin_username`, and the module wires the same value
+to both places so the two cannot drift apart.
+
+Two things are rejected at plan time rather than at apply:
+
+- **A private key.** An OpenSSH private key starts `-----BEGIN`, so requiring a
+  public-key algorithm prefix (`ssh-ed25519`, `ssh-rsa`, `ecdsa-sha2-*`) catches
+  the paste mistake.
+- **A reserved username.** Azure refuses `root`, `admin`, `administrator`,
+  `guest`, `test`, `user` and similar, and would otherwise fail the apply after
+  the NIC already exists.
+
+## The public IP is opt-in and opens nothing
+
+`public_ip_enabled = true` allocates a Standard static IPv4 address and attaches
+it to the NIC. It does **not** create an inbound security rule, so nothing can
+reach port 22 until you add one yourself:
+
+```hcl
+resource "azurerm_network_security_rule" "ssh" {
+  name                        = "allow-ssh-from-office"
+  resource_group_name         = "learn-rg"
+  network_security_group_name = module.network.network_security_group_names["workload_private"]
+  priority                    = 100
+  direction                   = "Inbound"
+  access                      = "Allow"
+  protocol                    = "Tcp"
+  source_port_range           = "*"
+  destination_port_range      = "22"
+  source_address_prefix       = "203.0.113.10/32" # never "*"
+  destination_address_prefix  = "*"
+}
+```
+
+Two decisions rather than one, deliberately. For anything beyond a short-lived
+test, prefer a bastion or a VPN and leave the address off.
+
+Both public IP outputs are `null` when the address is not created, so a caller
+can reference them without guarding on the flag.
+
+## Reaching it without a public IP
+
+- Azure Bastion, from a `AzureBastionSubnet` in the same VNet.
+- A VPN or ExpressRoute connection.
+- A peered network.
+- The serial console, for break-glass access when networking itself is broken.
+
+## Choosing between this and its siblings
+
+Use `linux-vm` for one machine that matters — a control node, a build agent, a
+jump host. For several machines that differ per instance, use
+[`linux-vms`](../linux-vms). For interchangeable copies behind a load balancer,
+use [`vm-scale-set`](../vm-scale-set).
+
+## The size default is not the cheapest
+
+`Standard_D2s_v3` is chosen for broad regional capacity rather than price. For a
+lab, `Standard_B1s` or `Standard_B2s` is considerably cheaper — check they are
+available in your region and that your subscription has quota, since a size with
+no capacity fails the apply rather than falling back.
+
+## What this module leaves out
+
+- **The resource group, VNet, and subnet.**
+- **Security rules**, including the one the public IP needs.
+- **Data disks.** The VM gets a Standard_LRS OS disk only.
+- **Role assignments.** Grant roles to `principal_id` yourself.
+- **Backup, monitoring agents, and patch management.**
 
 <!-- BEGIN_TF_DOCS -->
 ## Requirements
