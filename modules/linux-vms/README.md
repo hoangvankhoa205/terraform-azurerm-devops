@@ -64,10 +64,10 @@ optional; `ssh_public_key` is shared across all instances. Outputs (`ids`,
 
 | Name | Description | Type | Default | Required |
 | ---- | ----------- | ---- | ------- | :------: |
-| <a name="input_instances"></a> [instances](#input\_instances) | VM definitions keyed by stable logical name. | <pre>map(object({<br/>    subnet_id      = string<br/>    size           = optional(string, "Standard_D2s_v3")<br/>    admin_username = optional(string, "azureuser")<br/>    custom_data    = optional(string)<br/>  }))</pre> | n/a | yes |
+| <a name="input_instances"></a> [instances](#input\_instances) | VM definitions keyed by stable logical name. The key becomes the VM name and its NIC name, so renaming a key destroys and recreates that VM — choose keys you can live with. | <pre>map(object({<br/>    subnet_id      = string<br/>    size           = optional(string, "Standard_D2s_v3")<br/>    admin_username = optional(string, "azureuser")<br/>    custom_data    = optional(string)<br/>  }))</pre> | n/a | yes |
 | <a name="input_location"></a> [location](#input\_location) | Azure region. | `string` | n/a | yes |
 | <a name="input_resource_group_name"></a> [resource\_group\_name](#input\_resource\_group\_name) | Existing resource group name. | `string` | n/a | yes |
-| <a name="input_ssh_public_key"></a> [ssh\_public\_key](#input\_ssh\_public\_key) | Shared OpenSSH public key. | `string` | n/a | yes |
+| <a name="input_ssh_public_key"></a> [ssh\_public\_key](#input\_ssh\_public\_key) | OpenSSH public key shared by every VM in the map. Pass the contents of a .pub file, never the private key. Password login is disabled, so this is the only way in. | `string` | n/a | yes |
 | <a name="input_tags"></a> [tags](#input\_tags) | Resource tags. | `map(string)` | `{}` | no |
 
 ## Outputs

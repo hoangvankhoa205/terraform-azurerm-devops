@@ -33,9 +33,9 @@ autoscale rules.
 | <a name="input_location"></a> [location](#input\_location) | Azure region. | `string` | n/a | yes |
 | <a name="input_name"></a> [name](#input\_name) | Scale set name. | `string` | n/a | yes |
 | <a name="input_resource_group_name"></a> [resource\_group\_name](#input\_resource\_group\_name) | Existing resource group name. | `string` | n/a | yes |
-| <a name="input_ssh_public_key"></a> [ssh\_public\_key](#input\_ssh\_public\_key) | OpenSSH public key. | `string` | n/a | yes |
+| <a name="input_ssh_public_key"></a> [ssh\_public\_key](#input\_ssh\_public\_key) | OpenSSH public key shared by every instance. Pass the contents of a .pub file, never the private key. Password login is disabled, so this is the only way onto an instance. | `string` | n/a | yes |
 | <a name="input_subnet_id"></a> [subnet\_id](#input\_subnet\_id) | Private workload subnet ID. | `string` | n/a | yes |
-| <a name="input_admin_username"></a> [admin\_username](#input\_admin\_username) | Local administrator username. | `string` | `"azureuser"` | no |
+| <a name="input_admin_username"></a> [admin\_username](#input\_admin\_username) | Local administrator username on every instance. Azure rejects a list of reserved names (root, admin, administrator and similar) at create time, so a typo here fails the apply rather than the boot. | `string` | `"azureuser"` | no |
 | <a name="input_custom_data"></a> [custom\_data](#input\_custom\_data) | Optional cloud-init text. | `string` | `null` | no |
 | <a name="input_instances"></a> [instances](#input\_instances) | Desired instance count. | `number` | `2` | no |
 | <a name="input_sku"></a> [sku](#input\_sku) | VM SKU. | `string` | `"Standard_B2s"` | no |

@@ -34,8 +34,8 @@ combine it with `github-actions-rbac` using narrow scopes.
 | <a name="input_location"></a> [location](#input\_location) | Azure region. | `string` | n/a | yes |
 | <a name="input_name"></a> [name](#input\_name) | Managed identity name. | `string` | n/a | yes |
 | <a name="input_resource_group_name"></a> [resource\_group\_name](#input\_resource\_group\_name) | Existing resource group name. | `string` | n/a | yes |
-| <a name="input_subject"></a> [subject](#input\_subject) | Exact GitHub OIDC subject, such as repo:owner/repository:environment:dev. | `string` | n/a | yes |
-| <a name="input_audiences"></a> [audiences](#input\_audiences) | OIDC audiences. | `list(string)` | <pre>[<br/>  "api://AzureADTokenExchange"<br/>]</pre> | no |
+| <a name="input_subject"></a> [subject](#input\_subject) | Exact GitHub OIDC subject, such as repo:owner/repository:environment:dev. Entra matches this string literally against the token GitHub presents, so it must name one environment, one ref, or pull\_request — anything broader hands every workflow in the repository the same Azure access. | `string` | n/a | yes |
+| <a name="input_audiences"></a> [audiences](#input\_audiences) | OIDC audience the token must carry. Entra ID expects api://AzureADTokenExchange and there is rarely a reason to change it. Kept as a list because that is the shape the provider takes, but Azure accepts only one entry. | `list(string)` | <pre>[<br/>  "api://AzureADTokenExchange"<br/>]</pre> | no |
 | <a name="input_credential_name"></a> [credential\_name](#input\_credential\_name) | Federated credential name. | `string` | `"github-actions"` | no |
 | <a name="input_tags"></a> [tags](#input\_tags) | Resource tags. | `map(string)` | `{}` | no |
 

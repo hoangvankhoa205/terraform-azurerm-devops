@@ -1,0 +1,196 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+# A push that lands while an earlier run is still going supersedes it.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  # The floor declared in every module's versions.tf. Modules are tested against
+  # it rather than only against the newest release, so the constraint stays a
+  # promise instead of an aspiration.
+  TERRAFORM_FLOOR: 1.9.8
+  TERRAFORM_LATEST: 1.14.9
+  OPENTOFU_LATEST: 1.12.4
+  TERRAFORM_DOCS: 0.24.0
+  TFLINT: 0.64.0
+
+jobs:
+  # -------------------------------------------------------------------------
+  # Formatting and generated-documentation drift
+  # -------------------------------------------------------------------------
+  static:
+    name: fmt and docs
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+
+      - name: Install Terraform
+        run: |
+          curl -fsSL -o terraform.zip \
+            "https://releases.hashicorp.com/terraform/${TERRAFORM_LATEST}/terraform_${TERRAFORM_LATEST}_linux_amd64.zip"
+          unzip -q terraform.zip -d /usr/local/bin
+          terraform version
+
+      - name: Check formatting
+        run: terraform fmt -check -recursive -diff .
+
+      - name: Install terraform-docs
+        run: |
+          curl -fsSL -o terraform-docs.tar.gz \
+            "https://github.com/terraform-docs/terraform-docs/releases/download/v${TERRAFORM_DOCS}/terraform-docs-v${TERRAFORM_DOCS}-linux-amd64.tar.gz"
+          tar -xzf terraform-docs.tar.gz -C /usr/local/bin terraform-docs
+          terraform-docs --version
+
+      # Regenerating must be a no-op. If it is not, a variable or output changed
+      # without its README table being refreshed.
+      - name: Check generated docs are current
+        run: |
+          for module in modules/*/; do
+            terraform-docs -c .terraform-docs.yml "$module"
+          done
+          if ! git diff --exit-code -- '*/README.md'; then
+            echo "::error::README tables are stale. Run: for m in modules/*/; do terraform-docs -c .terraform-docs.yml \"\$m\"; done" >&2
+            exit 1
+          fi
+
+  # -------------------------------------------------------------------------
+  # One matrix leg per module, so a failure names the module directly
+  # -------------------------------------------------------------------------
+  discover:
+    name: list modules
+    runs-on: ubuntu-latest
+    outputs:
+      modules: ${{ steps.list.outputs.modules }}
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+
+      # Derived from the tree rather than hard-coded, so a new module is picked
+      # up without anyone remembering to edit this file.
+      - id: list
+        run: |
+          modules=$(find modules -mindepth 1 -maxdepth 1 -type d -printf '%f\n' | sort | jq -R -s -c 'split("\n")[:-1]')
+          echo "modules=$modules" >> "$GITHUB_OUTPUT"
+          echo "Discovered: $modules"
+
+  test:
+    name: ${{ matrix.module }}
+    needs: discover
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        module: ${{ fromJson(needs.discover.outputs.modules) }}
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+
+      - name: Install Terraform ${{ env.TERRAFORM_FLOOR }}
+        run: |
+          curl -fsSL -o terraform.zip \
+            "https://releases.hashicorp.com/terraform/${TERRAFORM_FLOOR}/terraform_${TERRAFORM_FLOOR}_linux_amd64.zip"
+          unzip -q terraform.zip -d /usr/local/bin
+          terraform version
+
+      - name: Install tflint
+        run: |
+          curl -fsSL -o tflint.zip \
+            "https://github.com/terraform-linters/tflint/releases/download/v${TFLINT}/tflint_linux_amd64.zip"
+          unzip -q tflint.zip -d /usr/local/bin
+          tflint --version
+
+      # -backend=false because a reusable module configures no backend; this
+      # only needs the provider schemas the validate and test steps read.
+      - name: Initialise
+        working-directory: modules/${{ matrix.module }}
+        run: terraform init -backend=false -no-color
+
+      - name: Validate
+        working-directory: modules/${{ matrix.module }}
+        run: terraform validate -no-color
+
+      - name: Lint
+        working-directory: modules/${{ matrix.module }}
+        run: tflint --no-color
+
+      # The providers are mocked, so this reaches no Azure API and needs no
+      # credentials.
+      - name: Test
+        working-directory: modules/${{ matrix.module }}
+        run: terraform test -no-color
+
+      # A few modules keep assertions that need an instance-keyed
+      # override_resource, which OpenTofu cannot parse. They live in their own
+      # directory so OpenTofu never loads them; Terraform runs them here.
+      - name: Test (Terraform-only assertions)
+        working-directory: modules/${{ matrix.module }}
+        run: |
+          if [ -d tests-terraform ]; then
+            terraform test -no-color -test-directory=tests-terraform
+          else
+            echo "no Terraform-only tests for this module"
+          fi
+
+  # -------------------------------------------------------------------------
+  # The README promises Terraform and OpenTofu >= 1.9, < 2.0. The matrix above
+  # proves the floor on Terraform; this proves the ceiling, on both tools.
+  # -------------------------------------------------------------------------
+  compatibility:
+    name: ${{ matrix.tool }} ${{ matrix.version }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - tool: terraform
+            version: 1.14.9
+          - tool: tofu
+            version: 1.12.4
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+
+      - name: Install ${{ matrix.tool }}
+        run: |
+          if [ "${{ matrix.tool }}" = "terraform" ]; then
+            curl -fsSL -o tool.zip \
+              "https://releases.hashicorp.com/terraform/${{ matrix.version }}/terraform_${{ matrix.version }}_linux_amd64.zip"
+          else
+            curl -fsSL -o tool.zip \
+              "https://github.com/opentofu/opentofu/releases/download/v${{ matrix.version }}/tofu_${{ matrix.version }}_linux_amd64.zip"
+          fi
+          unzip -q tool.zip -d /usr/local/bin
+          ${{ matrix.tool }} version
+
+      - name: Test every module
+        run: |
+          failed=()
+          for module in modules/*/; do
+            name=$(basename "$module")
+            echo "::group::$name"
+            if ! (cd "$module" \
+                  && ${{ matrix.tool }} init -backend=false -no-color \
+                  && ${{ matrix.tool }} test -no-color); then
+              failed+=("$name")
+            fi
+            echo "::endgroup::"
+          done
+          if [ ${#failed[@]} -gt 0 ]; then
+            echo "::error::Failed on ${{ matrix.tool }} ${{ matrix.version }}: ${failed[*]}" >&2
+            exit 1
+          fi

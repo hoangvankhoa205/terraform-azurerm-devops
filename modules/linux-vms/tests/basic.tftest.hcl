@@ -56,32 +56,8 @@ run "names_are_derived_from_the_map_key" {
   }
 }
 
-# Count alone would pass on a transposed for_each; this pins each VM to the NIC
-# that shares its key.
-run "each_vm_uses_its_own_nic" {
-  command = apply
-
-  override_resource {
-    target = azurerm_network_interface.this["one"]
-    values = {
-      id = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/learn-rg/providers/Microsoft.Network/networkInterfaces/one-nic"
-    }
-  }
-  override_resource {
-    target = azurerm_network_interface.this["two"]
-    values = {
-      id = "/subscriptions/00000000-0000-0000-0000-000000000000/resourceGroups/learn-rg/providers/Microsoft.Network/networkInterfaces/two-nic"
-    }
-  }
-
-  assert {
-    condition = alltrue([
-      for k in keys(var.instances) :
-      azurerm_linux_virtual_machine.this[k].network_interface_ids[0] == azurerm_network_interface.this[k].id
-    ])
-    error_message = "Each VM must attach the NIC that shares its key."
-  }
-}
+# The VM-to-NIC pairing is asserted in wiring.tftest.hcl, which needs a
+# Terraform-only feature; see the note at the top of that file.
 
 run "instance_defaults_apply_when_not_overridden" {
   command = plan
