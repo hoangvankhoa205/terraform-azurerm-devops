@@ -33,10 +33,6 @@ change, so prefer a private or static-egress self-hosted runner for state.
 | ---- | ------- |
 | <a name="provider_azurerm"></a> [azurerm](#provider\_azurerm) | >= 4.81.0, < 5.0.0 |
 
-## Modules
-
-No modules.
-
 ## Resources
 
 | Name | Type |
@@ -48,13 +44,13 @@ No modules.
 
 | Name | Description | Type | Default | Required |
 | ---- | ----------- | ---- | ------- | :------: |
-| <a name="input_container_name"></a> [container\_name](#input\_container\_name) | Private state container name. | `string` | `"tfstate"` | no |
 | <a name="input_location"></a> [location](#input\_location) | Azure region. | `string` | n/a | yes |
 | <a name="input_name"></a> [name](#input\_name) | Globally unique storage account name. | `string` | n/a | yes |
+| <a name="input_resource_group_name"></a> [resource\_group\_name](#input\_resource\_group\_name) | Existing bootstrap resource group name. | `string` | n/a | yes |
+| <a name="input_container_name"></a> [container\_name](#input\_container\_name) | Private state container name. | `string` | `"tfstate"` | no |
 | <a name="input_network_rules"></a> [network\_rules](#input\_network\_rules) | Deny-by-default state storage exceptions for trusted runner IPs or connected subnets. | <pre>object({<br/>    bypass                     = optional(set(string), ["AzureServices"])<br/>    ip_rules                   = optional(set(string), [])<br/>    virtual_network_subnet_ids = optional(set(string), [])<br/>  })</pre> | `{}` | no |
 | <a name="input_public_network_access_enabled"></a> [public\_network\_access\_enabled](#input\_public\_network\_access\_enabled) | Expose the storage public endpoint. When true, deny-by-default network\_rules still apply. | `bool` | `false` | no |
 | <a name="input_replication_type"></a> [replication\_type](#input\_replication\_type) | Storage replication type. | `string` | `"ZRS"` | no |
-| <a name="input_resource_group_name"></a> [resource\_group\_name](#input\_resource\_group\_name) | Existing bootstrap resource group name. | `string` | n/a | yes |
 | <a name="input_retention_days"></a> [retention\_days](#input\_retention\_days) | Blob and container soft-delete retention. | `number` | `14` | no |
 | <a name="input_tags"></a> [tags](#input\_tags) | Resource tags. | `map(string)` | `{}` | no |
 

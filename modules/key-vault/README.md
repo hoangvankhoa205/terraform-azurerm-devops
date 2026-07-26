@@ -103,10 +103,6 @@ name needs to be reusable.
 | ---- | ------- |
 | <a name="provider_azurerm"></a> [azurerm](#provider\_azurerm) | >= 4.81.0, < 5.0.0 |
 
-## Modules
-
-No modules.
-
 ## Resources
 
 | Name | Type |
@@ -119,13 +115,13 @@ No modules.
 | ---- | ----------- | ---- | ------- | :------: |
 | <a name="input_location"></a> [location](#input\_location) | Azure region. | `string` | n/a | yes |
 | <a name="input_name"></a> [name](#input\_name) | Globally unique Key Vault name. | `string` | n/a | yes |
+| <a name="input_resource_group_name"></a> [resource\_group\_name](#input\_resource\_group\_name) | Existing resource group name. | `string` | n/a | yes |
+| <a name="input_tenant_id"></a> [tenant\_id](#input\_tenant\_id) | Microsoft Entra tenant ID. | `string` | n/a | yes |
 | <a name="input_network_acls"></a> [network\_acls](#input\_network\_acls) | Deny-by-default vault exceptions for trusted deployment IPs or connected subnets. | <pre>object({<br/>    bypass                     = optional(string, "AzureServices")<br/>    ip_rules                   = optional(set(string), [])<br/>    virtual_network_subnet_ids = optional(set(string), [])<br/>  })</pre> | `{}` | no |
 | <a name="input_public_network_access_enabled"></a> [public\_network\_access\_enabled](#input\_public\_network\_access\_enabled) | Expose the Key Vault public endpoint. When true, deny-by-default network\_acls still apply. | `bool` | `false` | no |
 | <a name="input_purge_protection_enabled"></a> [purge\_protection\_enabled](#input\_purge\_protection\_enabled) | Block permanent deletion until the soft-delete window expires. IRREVERSIBLE — Azure does not allow turning this off once a vault has it, so a destroyed vault cannot be purged early and its globally unique name stays reserved for soft\_delete\_retention\_days. Required by services that accept a customer-managed key. Set false only for throwaway vaults you expect to destroy and recreate under the same name. | `bool` | `true` | no |
-| <a name="input_resource_group_name"></a> [resource\_group\_name](#input\_resource\_group\_name) | Existing resource group name. | `string` | n/a | yes |
 | <a name="input_soft_delete_retention_days"></a> [soft\_delete\_retention\_days](#input\_soft\_delete\_retention\_days) | Days a deleted vault stays recoverable before it can be purged. With purge\_protection\_enabled the vault CANNOT be purged before this elapses, and the name is unusable for the whole window — so a long value is expensive in a destroy/recreate loop. Azure permits 7-90. | `number` | `7` | no |
 | <a name="input_tags"></a> [tags](#input\_tags) | Resource tags. | `map(string)` | `{}` | no |
-| <a name="input_tenant_id"></a> [tenant\_id](#input\_tenant\_id) | Microsoft Entra tenant ID. | `string` | n/a | yes |
 
 ## Outputs
 

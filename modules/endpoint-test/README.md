@@ -58,10 +58,6 @@ also what orders the request after the thing exists.
 | ---- | ------- |
 | <a name="provider_http"></a> [http](#provider\_http) | >= 3.5.0, < 4.0.0 |
 
-## Modules
-
-No modules.
-
 ## Resources
 
 | Name | Type |
@@ -72,10 +68,10 @@ No modules.
 
 | Name | Description | Type | Default | Required |
 | ---- | ----------- | ---- | ------- | :------: |
+| <a name="input_url"></a> [url](#input\_url) | HTTP(S) URL to test. | `string` | n/a | yes |
 | <a name="input_expected_status"></a> [expected\_status](#input\_expected\_status) | Expected HTTP status code. | `number` | `200` | no |
 | <a name="input_request_headers"></a> [request\_headers](#input\_request\_headers) | Optional request headers; do not put long-lived secrets in configuration. | `map(string)` | `{}` | no |
 | <a name="input_timeout_ms"></a> [timeout\_ms](#input\_timeout\_ms) | Request timeout in milliseconds. | `number` | `5000` | no |
-| <a name="input_url"></a> [url](#input\_url) | HTTP(S) URL to test. | `string` | n/a | yes |
 
 ## Outputs
 

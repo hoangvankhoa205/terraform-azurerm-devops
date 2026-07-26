@@ -20,10 +20,6 @@ combine it with `github-actions-rbac` using narrow scopes.
 | ---- | ------- |
 | <a name="provider_azurerm"></a> [azurerm](#provider\_azurerm) | >= 4.81.0, < 5.0.0 |
 
-## Modules
-
-No modules.
-
 ## Resources
 
 | Name | Type |
@@ -35,12 +31,12 @@ No modules.
 
 | Name | Description | Type | Default | Required |
 | ---- | ----------- | ---- | ------- | :------: |
-| <a name="input_audiences"></a> [audiences](#input\_audiences) | OIDC audiences. | `list(string)` | <pre>[<br/>  "api://AzureADTokenExchange"<br/>]</pre> | no |
-| <a name="input_credential_name"></a> [credential\_name](#input\_credential\_name) | Federated credential name. | `string` | `"github-actions"` | no |
 | <a name="input_location"></a> [location](#input\_location) | Azure region. | `string` | n/a | yes |
 | <a name="input_name"></a> [name](#input\_name) | Managed identity name. | `string` | n/a | yes |
 | <a name="input_resource_group_name"></a> [resource\_group\_name](#input\_resource\_group\_name) | Existing resource group name. | `string` | n/a | yes |
 | <a name="input_subject"></a> [subject](#input\_subject) | Exact GitHub OIDC subject, such as repo:owner/repository:environment:dev. | `string` | n/a | yes |
+| <a name="input_audiences"></a> [audiences](#input\_audiences) | OIDC audiences. | `list(string)` | <pre>[<br/>  "api://AzureADTokenExchange"<br/>]</pre> | no |
+| <a name="input_credential_name"></a> [credential\_name](#input\_credential\_name) | Federated credential name. | `string` | `"github-actions"` | no |
 | <a name="input_tags"></a> [tags](#input\_tags) | Resource tags. | `map(string)` | `{}` | no |
 
 ## Outputs

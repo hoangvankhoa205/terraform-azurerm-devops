@@ -21,10 +21,6 @@ diagnostics, locks, customer requirements for geo-backup, and restore testing.
 | ---- | ------- |
 | <a name="provider_azurerm"></a> [azurerm](#provider\_azurerm) | >= 4.81.0, < 5.0.0 |
 
-## Modules
-
-No modules.
-
 ## Resources
 
 | Name | Type |
@@ -35,16 +31,16 @@ No modules.
 
 | Name | Description | Type | Default | Required |
 | ---- | ----------- | ---- | ------- | :------: |
-| <a name="input_administrator_login"></a> [administrator\_login](#input\_administrator\_login) | Database administrator username. | `string` | `"pgadminuser"` | no |
 | <a name="input_administrator_password"></a> [administrator\_password](#input\_administrator\_password) | Database administrator password; source this from a secret store. | `string` | n/a | yes |
-| <a name="input_backup_retention_days"></a> [backup\_retention\_days](#input\_backup\_retention\_days) | Point-in-time restore retention. | `number` | `7` | no |
 | <a name="input_delegated_subnet_id"></a> [delegated\_subnet\_id](#input\_delegated\_subnet\_id) | Subnet delegated to Microsoft.DBforPostgreSQL/flexibleServers. | `string` | n/a | yes |
-| <a name="input_high_availability"></a> [high\_availability](#input\_high\_availability) | Optional same-zone or zone-redundant HA settings. | <pre>object({<br/>  mode = string, standby_availability_zone = optional(string) })</pre> | `null` | no |
 | <a name="input_location"></a> [location](#input\_location) | Azure region. | `string` | n/a | yes |
 | <a name="input_name"></a> [name](#input\_name) | Globally unique PostgreSQL server name. | `string` | n/a | yes |
-| <a name="input_postgres_version"></a> [postgres\_version](#input\_postgres\_version) | PostgreSQL major version. | `string` | `"16"` | no |
 | <a name="input_private_dns_zone_id"></a> [private\_dns\_zone\_id](#input\_private\_dns\_zone\_id) | Private DNS zone ID for delegated networking. | `string` | n/a | yes |
 | <a name="input_resource_group_name"></a> [resource\_group\_name](#input\_resource\_group\_name) | Existing resource group name. | `string` | n/a | yes |
+| <a name="input_administrator_login"></a> [administrator\_login](#input\_administrator\_login) | Database administrator username. | `string` | `"pgadminuser"` | no |
+| <a name="input_backup_retention_days"></a> [backup\_retention\_days](#input\_backup\_retention\_days) | Point-in-time restore retention. | `number` | `7` | no |
+| <a name="input_high_availability"></a> [high\_availability](#input\_high\_availability) | Optional same-zone or zone-redundant HA settings. | <pre>object({<br/>  mode = string, standby_availability_zone = optional(string) })</pre> | `null` | no |
+| <a name="input_postgres_version"></a> [postgres\_version](#input\_postgres\_version) | PostgreSQL major version. | `string` | `"16"` | no |
 | <a name="input_sku_name"></a> [sku\_name](#input\_sku\_name) | Flexible Server compute SKU. | `string` | `"B_Standard_B1ms"` | no |
 | <a name="input_storage_mb"></a> [storage\_mb](#input\_storage\_mb) | Storage allocation in MiB. | `number` | `32768` | no |
 | <a name="input_tags"></a> [tags](#input\_tags) | Resource tags. | `map(string)` | `{}` | no |

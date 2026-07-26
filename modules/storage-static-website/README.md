@@ -54,10 +54,6 @@ carries the dependency.
 | ---- | ------- |
 | <a name="provider_azurerm"></a> [azurerm](#provider\_azurerm) | >= 4.81.0, < 5.0.0 |
 
-## Modules
-
-No modules.
-
 ## Resources
 
 | Name | Type |
@@ -69,13 +65,13 @@ No modules.
 
 | Name | Description | Type | Default | Required |
 | ---- | ----------- | ---- | ------- | :------: |
-| <a name="input_error_404_document"></a> [error\_404\_document](#input\_error\_404\_document) | 404 page filename. | `string` | `"404.html"` | no |
-| <a name="input_index_document"></a> [index\_document](#input\_index\_document) | Default page filename. | `string` | `"index.html"` | no |
 | <a name="input_location"></a> [location](#input\_location) | Azure region. | `string` | n/a | yes |
 | <a name="input_name"></a> [name](#input\_name) | Globally unique storage account name. | `string` | n/a | yes |
+| <a name="input_resource_group_name"></a> [resource\_group\_name](#input\_resource\_group\_name) | Existing resource group name. | `string` | n/a | yes |
+| <a name="input_error_404_document"></a> [error\_404\_document](#input\_error\_404\_document) | 404 page filename. | `string` | `"404.html"` | no |
+| <a name="input_index_document"></a> [index\_document](#input\_index\_document) | Default page filename. | `string` | `"index.html"` | no |
 | <a name="input_network_rules"></a> [network\_rules](#input\_network\_rules) | Deny-by-default static website exceptions for trusted client IPs or connected subnets. | <pre>object({<br/>    bypass                     = optional(set(string), ["AzureServices"])<br/>    ip_rules                   = optional(set(string), [])<br/>    virtual_network_subnet_ids = optional(set(string), [])<br/>  })</pre> | `{}` | no |
 | <a name="input_public_network_access_enabled"></a> [public\_network\_access\_enabled](#input\_public\_network\_access\_enabled) | Expose the static website public endpoint. When true, deny-by-default network\_rules still apply. | `bool` | `false` | no |
-| <a name="input_resource_group_name"></a> [resource\_group\_name](#input\_resource\_group\_name) | Existing resource group name. | `string` | n/a | yes |
 | <a name="input_tags"></a> [tags](#input\_tags) | Resource tags. | `map(string)` | `{}` | no |
 
 ## Outputs
